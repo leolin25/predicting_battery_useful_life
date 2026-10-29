@@ -2,6 +2,8 @@
 \usepackage{fontspec}      % Allows loading system fonts
 \setmainfont{Arial}        % Sets the default body text font to Arial
 \usepackage{graphicx}      % Required for inserting images
+\usepackage[margin=1in]{geometry}
+\usepackage{underscore}    % this allows use of underscore without subscripting
 
 \begin{document}
 
@@ -23,9 +25,11 @@ It is important to analyse the correlation between covariates in the data as a h
 
 \begin{figure}[h] % this code means following paragraph always comes after this figure
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.25\textwidth]{corr_heatmap.png}}
-    \caption{Covariates in battery_observations.csv and battery_metadata.csv}
+    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{corr_heatmap.png}}
+    \caption{Covariates in battery observations and battery metadata}
     \label{fig:timetable}
 \end{figure}
+
+Figure 1 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates or accounting for it using regularization in the model.
 
 \end{document}
