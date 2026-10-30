@@ -21,6 +21,8 @@
 
 \section{Task 1: Exploratory Data Analysis and Data Visualisation}
 
+\subsection{Correlation Analysis}
+
 It is important to analyse the correlation between covariates in the data as a high correlation between covariates could cause multicollinearity which could affect the weighting of some covariates. This can be done using a correlation heat map which visualises the correlation between all numerical covariates in the data.
 
 \begin{figure}[h]
@@ -32,6 +34,10 @@ It is important to analyse the correlation between covariates in the data as a h
 
 Figure 1 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature or accounting for it using regularization in the model.
 
+'pack_voltage_mean_v' has extremely high correlation values with 'pack_voltage_charge_v' and 'pack_voltage_discharge_v' (0.99 correlation coefficient for each), this suggests that this covariate should be used without the other 2 covariates since they are strongly correlated or should be combined with the other two covariates to engineer a single feature.
+
+\subsection{Feature separability by degradation status}
+
 Visualising covariate statistics by 'degradation_status' will allow us to see patterns in the data and identify which numerical covariates have a relationship with the target feature. Some covariates were not analysed since they were either highly correlated with another covariate which was already being analysed; had no impact on 'degradation_status'; or were a categorical covariate.
 
 \begin{figure}[h]
@@ -42,6 +48,8 @@ Visualising covariate statistics by 'degradation_status' will allow us to see pa
 \end{figure}
 
 We can see that most covariates are not separable by 'degradation_status'. However, some covariates such as 'equivalent_full_cycles' are separable and potentially good predictive features for a model to classify the degradation status of the battery. 
+
+\subsection{Degradation status by categorical features}
 
 \section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
 
