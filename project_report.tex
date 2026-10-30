@@ -4,6 +4,7 @@
 \usepackage{graphicx}      % Required for inserting images
 \usepackage[margin=1in]{geometry}
 \usepackage{underscore}    % this allows use of underscore without subscripting
+\usepackage{float}         % use to fix figures
 
 \begin{document}
 
@@ -25,7 +26,7 @@
 
 It is important to analyse the correlation between covariates in the data as a high correlation between covariates could cause multicollinearity which could affect the weighting of some covariates. This can be done using a correlation heat map which visualises the correlation between all numerical covariates in the data.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{corr_heatmap.png}}
     \caption{Covariates in battery observations and battery metadata}
@@ -34,22 +35,45 @@ It is important to analyse the correlation between covariates in the data as a h
 
 Figure 1 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature or accounting for it using regularization in the model.
 
-'pack_voltage_mean_v' has extremely high correlation values with 'pack_voltage_charge_v' and 'pack_voltage_discharge_v' (0.99 correlation coefficient for each), this suggests that this covariate should be used without the other 2 covariates since they are strongly correlated or should be combined with the other two covariates to engineer a single feature.
+'pack_voltage_mean_v' has extremely high correlation values with 'pack_voltage_charge_v' and 'pack_voltage_discharge_v' (0.99 correlation coefficient for each). It also has lower but still significant correlation with 'soc_start_pct', 'soc_end_pct', 'high_soc_exposure_fraction' and 'low_soc_exposure_fraction'. This indicates that all these covariates are related and shouldn't all be put into the model together or it would cause multicollinearity.
+
+Most correlated covariates made sense when reading the data card provided on the Kaggle webpage and these can easily be combined to create a feature which avoids collinearity.
+
+\begin{itemize}
+    \item 'pack_temp_c' has 1.0 correlation coefficient with 'ambient_temp_c';
+    \item 'charge_current_a' and 'discharge_current_a' have high correlation with 'charge_c_rate' and 'discharge_c_rate' respectively;
+    \item 'energy_discharged_kwh' has 0.91 correlation coefficent with 'depth_of_discharge_pct' and other significant correlation coefficient with 'soc_end_pct' and 'discharge_duration_min'
+    \item 'battery_age_days' and 'cycle_index'
+\end{itemize}
 
 \subsection{Feature separability by degradation status}
 
 Visualising covariate statistics by 'degradation_status' will allow us to see patterns in the data and identify which numerical covariates have a relationship with the target feature. Some covariates were not analysed since they were either highly correlated with another covariate which was already being analysed; had no impact on 'degradation_status'; or were a categorical covariate.
 
-\begin{figure}[h]
+Something important to note is that the battery dataset has much less data for batteries on 'Critical' degradation status. There are 60569 rows about 'Normal'; 60434 rows about 'Moderate'; 51606 rows about 'Severe'; and 170 rows about 'Critical' degradation status. This is a big class imbalance and means the model needs different metrics to evaluate its effectiveness compared to if the dataset had balanced classes.
+
+\begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{covariate_analysis.png}}
     \caption{Feature separability by degradation status}
     \label{fig:timetable}
 \end{figure}
 
-We can see that most covariates are not separable by 'degradation_status'. However, some covariates such as 'equivalent_full_cycles' are separable and potentially good predictive features for a model to classify the degradation status of the battery. 
+We can see that most covariates are not separable by 'degradation_status'. However, some covariates could be predictive for the classification of degradation status such as
+
+\begin{itemize}
+    \item 'battery_age_days', 'equivalent_full_cycles' and 'cycle_index' are highly correlated with this covariate and therefore all of these covariates are highly predictive for 'degradation_status' 
+    \item 
+\end{itemize}
 
 \subsection{Degradation status by categorical features}
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{categorical_analysis.png}}
+    \caption{Percentage of each degradation status by categorical features}
+    \label{fig:timetable}
+\end{figure}
 
 \section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
 
@@ -59,4 +83,4 @@ We can see that most covariates are not separable by 'degradation_status'. Howev
 
 \section{Task 5: Supervised Deep Learning for Battery Degradation Analysis}
 
-\end{document}
+\end{document} 
