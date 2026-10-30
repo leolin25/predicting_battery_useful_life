@@ -36,10 +36,12 @@ Visualising covariate statistics by 'degradation_status' will allow us to see pa
 
 \begin{figure}[h]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{covariate_analysis1.png}}
+    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{covariate_analysis.png}}
     \caption{Feature separability by degradation status}
     \label{fig:timetable}
 \end{figure}
+
+We can see that most covariates are not separable by 'degradation_status'. However, some covariates such as 'equivalent_full_cycles' are separable and potentially good predictive features for a model to classify the degradation status of the battery. 
 
 \section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
 
