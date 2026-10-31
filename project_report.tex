@@ -42,8 +42,8 @@ Most correlated covariates made sense when reading the data card provided on the
 \begin{itemize}
     \item 'pack_temp_c' has 1.0 correlation coefficient with 'ambient_temp_c';
     \item 'charge_current_a' and 'discharge_current_a' have high correlation with 'charge_c_rate' and 'discharge_c_rate' respectively;
-    \item 'energy_discharged_kwh' has 0.91 correlation coefficent with 'depth_of_discharge_pct' and other significant correlation coefficient with 'soc_end_pct' and 'discharge_duration_min'
-    \item 'battery_age_days' and 'cycle_index'
+    \item 'energy_discharged_kwh' has 0.91 correlation coefficent with 'depth_of_discharge_pct' and other significant correlation coefficient with 'soc_end_pct' and 'discharge_duration_min';
+    \item 'battery_age_days' and 'cycle_index' are highly correlated
 \end{itemize}
 
 \subsection{Feature separability by degradation status}
@@ -62,11 +62,13 @@ Something important to note is that the battery dataset has much less data for b
 We can see that most covariates are not separable by 'degradation_status'. However, some covariates could be predictive for the classification of degradation status such as
 
 \begin{itemize}
-    \item 'battery_age_days', 'equivalent_full_cycles' and 'cycle_index' are highly correlated with this covariate and therefore all of these covariates are highly predictive for 'degradation_status' 
-    \item 
+    \item 'battery_age_days', 'equivalent_full_cycles' and 'cycle_index' are highly correlated with this covariate and therefore all of these covariates are highly predictive for 'degradation_status'. This shows that usage is an important factor when predictive 'degradation_status'.
+    \item 'pack_temp_c' is different when 'degradation_status' is critical. This indicates that high heat and damaging usage of the battery can specifically leave the battery in a critical condition.
 \end{itemize}
 
 \subsection{Degradation status by categorical features}
+
+Analysing how degradation status changes across categorical features is important. To visualise this, a stacked bar chart will be used to easily see there percentage proportion.
 
 \begin{figure}[H]
     \centering
@@ -75,7 +77,17 @@ We can see that most covariates are not separable by 'degradation_status'. Howev
     \label{fig:timetable}
 \end{figure}
 
+'eol_reached' and 'usage_strategy' both appear to be highly predictive features for 'degradation_strategy'. In this plot 0 is False and 1 is True, when a battery reaches end of life it most likely means heavy usage and relates to the pattern that covariates that track usage are highly predictive of the degradation status.
+
 \section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
+
+From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery such as 'pack_temp_c'. The following features will be used in the model:
+
+\begin{itemize}
+    \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher.
+    \item 'equivalent_full_cycles', lots of features recorded how long the battery has been used, but this feature seems the like the most direct link to battery wear of them.
+    \item 'usage_strategy', this is similar to 'eol_reached' and is correlated but not enough to worry about multicollinearity. This feature stores information about the usage of the battery.
+\end{itemize}
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis }
 
