@@ -22,6 +22,12 @@
 
 \section{Task 1: Exploratory Data Analysis and Data Visualisation}
 
+\subsection{Characteristics of the data}
+
+Something important to note is that the battery dataset has much less data for batteries on 'Critical' degradation status. There are 60569 rows about 'Normal'; 60434 rows about 'Moderate'; 51606 rows about 'Severe'; and 170 rows about 'Critical' degradation status. This is a major class imbalance and means that the model needs different metrics to evaluate its effectiveness compared to if the dataset had balanced classes.
+
+Additionally, the only NaN values in the data set are in 'pack_temp_c'. All other columns have 0 NaN values and this column has 1727 NaN values. This heavily discourages using 'pack_temp_c' as a feature and instead using 'ambient_temp_c' which is highly correlated with 'pack_temp_c' but with 0 NaN values.
+
 \subsection{Correlation Analysis}
 
 It is important to analyse the correlation between covariates in the data as a high correlation between covariates could cause multicollinearity which could affect the weighting of some covariates. This can be done using a correlation heat map which visualises the correlation between all numerical covariates in the data.
@@ -50,8 +56,6 @@ Most correlated covariates made sense when reading the data card provided on the
 
 Visualising covariate statistics by 'degradation_status' will allow us to see patterns in the data and identify which numerical covariates have a relationship with the target feature. Some covariates were not analysed since they were either highly correlated with another covariate which was already being analysed; had no impact on 'degradation_status'; or were a categorical covariate.
 
-Something important to note is that the battery dataset has much less data for batteries on 'Critical' degradation status. There are 60569 rows about 'Normal'; 60434 rows about 'Moderate'; 51606 rows about 'Severe'; and 170 rows about 'Critical' degradation status. This is a big class imbalance and means the model needs different metrics to evaluate its effectiveness compared to if the dataset had balanced classes.
-
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{covariate_analysis.png}}
@@ -64,6 +68,8 @@ We can see that most covariates are not separable by 'degradation_status'. Howev
 \begin{itemize}
     \item 'battery_age_days', 'equivalent_full_cycles' and 'cycle_index' are highly correlated with this covariate and therefore all of these covariates are highly predictive for 'degradation_status'. This shows that usage is an important factor when predictive 'degradation_status'.
     \item 'pack_temp_c' is different when 'degradation_status' is critical. This indicates that high heat and damaging usage of the battery can specifically leave the battery in a critical condition.
+    \item 'cumulative_high_temp_hours' exhibits increasing interquartile ranges as the degradation status worsens.
+    \item Median for 'depth_of_discharge_pct' increases for only 'Critical' status
 \end{itemize}
 
 \subsection{Degradation status by categorical features}
@@ -81,13 +87,21 @@ Analysing how degradation status changes across categorical features is importan
 
 \section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
 
-From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery such as 'pack_temp_c'. The following features will be used in the model:
+\subsection{Feature selection and engineering}
+
+From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery such as 'ambient_temp_c'. The following features will be used in the model:
 
 \begin{itemize}
     \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher.
     \item 'equivalent_full_cycles', lots of features recorded how long the battery has been used, but this feature seems the like the most direct link to battery wear of them.
     \item 'usage_strategy', this is similar to 'eol_reached' and is correlated but not enough to worry about multicollinearity. This feature stores information about the usage of the battery.
+    \item 'cumulative_high_temp_hours' was seen to be predictive in Figure 2 of a worsening degradation status.
+    \item Both 'ambient_temp_c' and 'depth_of_discharge_pct' are good features at predictive whether the battery is specifically in critical condition.
 \end{itemize}
+
+\subsection{Unsupervised Learning Model}
+
+I chose to use a GMM (Guassian Mixture Models) since from testing k-means on the data it shows that the spherical assumption of k-means doesn't work well on the data.
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis }
 
