@@ -87,12 +87,12 @@ Analysing how degradation status changes across categorical features is importan
 
 \section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
 
-\subsection{Feature selection and engineering}
+\subsection{Feature selection and preprocessing}
 
 From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery such as 'cumulative_high_temp_hours'. The following features will be used in the model:
 
 \begin{itemize}
-    \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher.
+    \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher. Process this feature as 1 when True and 0 when False.
     \item 'equivalent_full_cycles', lots of features recorded how long the battery has been used, but this feature seems the like the most direct link to battery wear of them.
     \item 'cumulative_high_temp_hours' was seen to be predictive in Figure 2 of a worsening degradation status.
 \end{itemize}
@@ -136,7 +136,16 @@ I chose to use a much larger amount of components (clusters) than the 3 labels p
 \end{tabular}
 \end{center}
 
-The GMM model uses a 'full' covariance type since it provides the most flexibility, and there is plenty of training data for it to work. The other covariance types assume some similarities in the clusters. The table above shows AIC, BIc and validation error for 'n_component' breakpoints I tested, the model I chose to use had 'n_component = 90' since this model minimized BIC while also having a good validation error compared to the other models.
+The GMM model uses a 'full' covariance type since it provides the most flexibility, and there is plenty of training data for it to work. The other covariance types assume some similarities in the clusters. The table above shows AIC, BIc and validation error for n_component breakpoints I tested, the model I chose to use had n_component = 90 since this model minimized BIC while also having a good validation error compared to the other models.
+
+The chosen model was GMM with n_component = 90 and covariance_type = 'full'.
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_1.png}}
+    \caption{Confusion matrix for validation set}
+    \label{fig:timetable}
+\end{figure}
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis }
 
