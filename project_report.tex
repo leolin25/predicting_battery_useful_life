@@ -89,19 +89,54 @@ Analysing how degradation status changes across categorical features is importan
 
 \subsection{Feature selection and engineering}
 
-From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery such as 'ambient_temp_c'. The following features will be used in the model:
+From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery such as 'cumulative_high_temp_hours'. The following features will be used in the model:
 
 \begin{itemize}
     \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher.
     \item 'equivalent_full_cycles', lots of features recorded how long the battery has been used, but this feature seems the like the most direct link to battery wear of them.
-    \item 'usage_strategy', this is similar to 'eol_reached' and is correlated but not enough to worry about multicollinearity. This feature stores information about the usage of the battery.
     \item 'cumulative_high_temp_hours' was seen to be predictive in Figure 2 of a worsening degradation status.
-    \item Both 'ambient_temp_c' and 'depth_of_discharge_pct' are good features at predictive whether the battery is specifically in critical condition.
 \end{itemize}
 
 \subsection{Unsupervised Learning Model}
 
-I chose to use a GMM (Guassian Mixture Models) since from testing k-means on the data it shows that the spherical assumption of k-means doesn't work well on the data.
+Since this is a classification problem the most applicable unsupervised learning algorithm will be a clustering algorithm. I chose to use a GMM (Guassian Mixture Models) since from testing k-means on the data it shows that the spherical assumption of k-means does not work well on the data. GMM is more flexible and allows for non-spherical-shaped clusters which fit the data much better and results in lower error.
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{deg_pie_char.png}}
+    \caption{Percentage of each degradation status in the training data}
+    \label{fig:timetable}
+\end{figure}
+
+As seen in Figure 1, there is a massive imbalance of classes in the training data, with only small amount of data being 'Critical' degradation status I decided it would be better to ignore this degradation status for this model since it would be extremely difficult for any unsupervised learning algorithm to learn this very small class.
+
+I chose to use a much larger amount of components (clusters) than the 3 labels predicted (not including 'Critical'). Testing using a lower number of components showed that a low number of components is insufficient to predict the labels in the data. 
+
+\begin{center}
+\begin{tabular}{||c c c c||} 
+ \hline
+ n_components & AIC & BIC & Validation Error \\ [0.5ex] 
+ \hline\hline
+ 30 & -1656864.6 & -1652988.8 & 34.13\% \\ 
+ \hline
+ 40 & -1656864.6 & -1652988.8 & 31.72\% \\ 
+ \hline
+ 50 & -1658593.9 & -1653746.7 & 32.32\% \\ 
+ \hline
+ 60 & -1673232.3 & -1667413.7 & 28.61\% \\
+ \hline
+ 70 & -1677432.7 & -1670642.7 & 27.52\% \\
+ \hline
+ 80 & -1678018.0 & -1670256.6 & 24.19\% \\
+ \hline
+ 90 & -1682727.5 & -1673994.8 & 22.02\% \\
+ \hline
+ 100 & -1683417.2 & -1673713.1 & 20.34\% \\
+ \hline
+\end{tabular}
+\end{center}
+
+The GMM model uses a 'full' covariance type since it provides the most flexibility, and there is plenty of training data for it to work. The other covariance types assume some similarities in the clusters. The table above shows AIC, BIc and validation error for 'n_component' breakpoints I tested, the model I chose to use had 'n_component = 90' since this model minimized BIC while also having a good validation error compared to the other models.
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis }
 
