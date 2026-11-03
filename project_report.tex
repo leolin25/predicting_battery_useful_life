@@ -142,7 +142,7 @@ The GMM model uses a 'full' covariance type since it provides the most flexibili
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_1.png}}
-    \caption{Confusion matrix for test set (Accuracy: 75.4\%)}
+    \caption{Confusion matrix for test set (Accuracy: 81.0\%)}
     \label{fig:timetable}
 \end{figure}
 
@@ -172,10 +172,11 @@ The features considered for the model were 'equivalent_full_cycle', 'eol_reached
 \end{tabular}
 \end{center}
 
+Looking at the table above, a few observations are notable. 'cumulative_high_temp_hours' was not as good as Figure 2 indicated the covariate would be and it increased error in every model it was included in. 'equivalent_full_cycle' was the most important model by far as removing it made the error of the model extremely high. Both 'eol_reached' and 'usage_strategy' were not as useful as 'equivalent_full_cycle' but still improved the model with the inclusion.
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis}
 
-
+\subsection{Feature Selection and Engineering}
 
 \section{Task 4: Unsupervised Deep Learning for Battery Degradation Analysis}
 
