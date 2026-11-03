@@ -28,6 +28,15 @@ Something important to note is that the battery dataset has much less data for b
 
 Additionally, the only NaN values in the data set are in 'pack_temp_c'. All other columns have 0 NaN values and this column has 1727 NaN values. This heavily discourages using 'pack_temp_c' as a feature and instead using 'ambient_temp_c' which is highly correlated with 'pack_temp_c' but with 0 NaN values.
 
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{cum_high_temp.png}}
+    \caption{Distribution of cumulative high temp hours by degradation status}
+    \label{fig:timetable}
+\end{figure}
+
+Figure 1 shows that cumulative high temp hours has a much different distribution depending on the degradation status. The variance increases with a less stable battery degradation state.
+
 \subsection{Correlation Analysis}
 
 It is important to analyse the correlation between covariates in the data as a high correlation between covariates could cause multicollinearity which could affect the weighting of some covariates. This can be done using a correlation heat map which visualises the correlation between all numerical covariates in the data.
@@ -39,15 +48,7 @@ It is important to analyse the correlation between covariates in the data as a h
     \label{fig:timetable}
 \end{figure}
 
-
-\begin{figure}[H]
-    \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{corr_heatmap.png}}
-    \caption{Covariates in battery observations and battery metadata}
-    \label{fig:timetable}
-\end{figure}
-
-Figure 1 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature or accounting for it using regularization in the model.
+Figure 2 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature or accounting for it using regularization in the model.
 
 'pack_voltage_mean_v' has extremely high correlation values with 'pack_voltage_charge_v' and 'pack_voltage_discharge_v' (0.99 correlation coefficient for each). It also has lower but still significant correlation with 'soc_start_pct', 'soc_end_pct', 'high_soc_exposure_fraction' and 'low_soc_exposure_fraction'. This indicates that all these covariates are related and shouldn't all be put into the model together or it would cause multicollinearity.
 
@@ -146,8 +147,6 @@ I chose to use a much larger amount of components (clusters) than the 3 labels p
 
 The GMM model uses a 'full' covariance type since it provides the most flexibility, and there is plenty of training data for it to work. The other covariance types assume some similarities in the clusters. The table above shows AIC, BIc and validation error for n_component breakpoints I tested, the model I chose to use had n_component = 90 since this model minimized BIC while also having a good validation error compared to the other models.
 
-The chosen model was GMM with n_component = 90 and covariance_type = 'full'.
-
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_1.png}}
@@ -156,6 +155,8 @@ The chosen model was GMM with n_component = 90 and covariance_type = 'full'.
 \end{figure}
 
 \subsection{Analysis of results}
+
+The accuracy of the model was 75.4\% on the test data set. This is acceptable for an unsupervised learning model. The model was created to ignore the 'Critical' degradation status and hence has 0\% accuracy detecting this type. The model tends to 'underestimate' the degradation status and predicts 'Normal' for lots of 'Moderate' points and 'Moderate' for 'Severe' points. This indicates how there is little change between a single stage of change in the degradation status as it was the most common error for the model.
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis }
 
