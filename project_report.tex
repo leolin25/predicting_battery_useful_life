@@ -28,15 +28,6 @@ Something important to note is that the battery dataset has much less data for b
 
 Additionally, the only NaN values in the data set are in 'pack_temp_c'. All other columns have 0 NaN values and this column has 1727 NaN values. This heavily discourages using 'pack_temp_c' as a feature and instead using 'ambient_temp_c' which is highly correlated with 'pack_temp_c' but with 0 NaN values.
 
-\begin{figure}[H]
-    \centering
-    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{cum_high_temp.png}}
-    \caption{Distribution of cumulative high temp hours by degradation status}
-    \label{fig:timetable}
-\end{figure}
-
-Figure 1 shows that cumulative high temp hours has a much different distribution depending on the degradation status. The variance increases with a less stable battery degradation state.
-
 \subsection{Correlation Analysis}
 
 It is important to analyse the correlation between covariates in the data as a high correlation between covariates could cause multicollinearity which could affect the weighting of some covariates. This can be done using a correlation heat map which visualises the correlation between all numerical covariates in the data.
@@ -78,7 +69,6 @@ We can see that most covariates are not separable by 'degradation_status'. Howev
     \item 'battery_age_days', 'equivalent_full_cycles' and 'cycle_index' are highly correlated with this covariate and therefore all of these covariates are highly predictive for 'degradation_status'. This shows that usage is an important factor when predictive 'degradation_status'.
     \item 'pack_temp_c' is different when 'degradation_status' is critical. This indicates that high heat and damaging usage of the battery can specifically leave the battery in a critical condition.
     \item 'cumulative_high_temp_hours' exhibits increasing interquartile ranges as the degradation status worsens.
-    \item Median for 'depth_of_discharge_pct' increases for only 'Critical' status
 \end{itemize}
 
 \subsection{Degradation status by categorical features}
@@ -98,21 +88,23 @@ Analysing how degradation status changes across categorical features is importan
 
 \subsection{Feature selection and preprocessing}
 
-From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery such as 'cumulative_high_temp_hours'. The following features will be used in the model:
+From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery. The following features will be used in the model:
 
 \begin{itemize}
     \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher. Process this feature as 1 when True and 0 when False.
     \item 'equivalent_full_cycles', lots of features recorded how long the battery has been used, but this feature seems the like the most direct link to battery wear of them.
-    \item 'cumulative_high_temp_hours' was seen to be predictive in Figure 2 of a worsening degradation status.
+    \item 'usage_strategy' was seen to be predictive in Figure 3 of a worsening degradation status, as more severe data was shown in bad batteries. This data was processed as an ordinal variable with 'Conservative' as 1 and 'Aggressive' as 4.
 \end{itemize}
+
+Testing revealed that using more than these 3 features significantly reduced accuracy.
 
 \subsection{Unsupervised Learning Model}
 
-Since this is a classification problem the most applicable unsupervised learning algorithm will be a clustering algorithm. I chose to use a GMM (Guassian Mixture Models) since from testing k-means on the data it shows that the spherical assumption of k-means does not work well on the data. GMM is more flexible and allows for non-spherical-shaped clusters which fit the data much better and results in lower error.
+Since this is a classification problem, the most appropriate unsupervised model is a clustering algorithm. I chose to use a GMM (Guassian Mixture Models) since from testing k-means on the data it shows that the spherical assumption of k-means does not work well on the data. GMM is more flexible and allows for non-spherical-shaped clusters which fit the data much better and results in lower error.
 
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{deg_pie_char.png}}
+    \makebox[\textwidth][c]{\includegraphics[width=0.65\textwidth]{deg_pie_char.png}}
     \caption{Percentage of each degradation status in the training data}
     \label{fig:timetable}
 \end{figure}
@@ -126,21 +118,21 @@ I chose to use a much larger amount of components (clusters) than the 3 labels p
  \hline
  n_components & AIC & BIC & Validation Error \\ [0.5ex] 
  \hline\hline
- 30 & -1656864.6 & -1652988.8 & 34.13\% \\ 
+ 30 & -2287581.8 & -2284677.3 & 17.52\% \\ 
  \hline
- 40 & -1656864.6 & -1652988.8 & 31.72\% \\ 
+ 40 & -2288801.5 & -2284925.7 & 18.43\% \\ 
  \hline
- 50 & -1658593.9 & -1653746.7 & 32.32\% \\ 
+ 50 & -2289314.1 & -2284466.8 & 19.31\% \\ 
  \hline
- 60 & -1673232.3 & -1667413.7 & 28.61\% \\
+ 60 & -2289737.4 & -2283918.7 & 16.81\% \\
  \hline
- 70 & -1677432.7 & -1670642.7 & 27.52\% \\
+ 70 & -2289852.1 & -2283062.2 & 16.32\% \\
  \hline
- 80 & -1678018.0 & -1670256.6 & 24.19\% \\
+ 80 & -2289939.3 & -2282178.0 & 16.67\% \\
  \hline
- 90 & -1682727.5 & -1673994.8 & 22.02\% \\
+ 90 & -2289867.8 & -2281135.1 & 16.10\% \\
  \hline
- 100 & -1683417.2 & -1673713.1 & 20.34\% \\
+ 100 & -2289866.6 & -2280162.5 & 16.93\% \\
  \hline
 \end{tabular}
 \end{center}
@@ -156,9 +148,34 @@ The GMM model uses a 'full' covariance type since it provides the most flexibili
 
 \subsection{Analysis of results}
 
-The accuracy of the model was 75.4\% on the test data set. This is acceptable for an unsupervised learning model. The model was created to ignore the 'Critical' degradation status and hence has 0\% accuracy detecting this type. The model tends to 'underestimate' the degradation status and predicts 'Normal' for lots of 'Moderate' points and 'Moderate' for 'Severe' points. This indicates how there is little change between a single stage of change in the degradation status as it was the most common error for the model.
+The accuracy of the model was 80.96\% on the test data set. This is acceptable for an unsupervised learning model. The model was created to ignore the 'Critical' degradation status and hence has 0\% accuracy detecting this type. The model tends to 'underestimate' the degradation status and predicts 'Normal' for lots of 'Moderate' points and 'Moderate' for 'Severe' points. This indicates how there is little change between a single stage of change in the degradation status as it was the most common error for the model.
 
-\section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis }
+\subsection{Usefulness of features}
+
+The features considered for the model were 'equivalent_full_cycle', 'eol_reached', 'usage_strategy' and 'cumulative_high_temp_hours' since they varied the most when degradation status was changed as seen in task 1.
+
+\begin{center}
+\begin{tabular}{||c c c c||} 
+ \hline
+ Model & AIC & BIC & Validation Error \\ [0.5ex] 
+ \hline\hline
+ All 4 covariates included & -3001961.6 &-2988857.6 & 27.90\% \\ 
+ \hline
+ 'equivalent_full_cycle' removed & -3201081.7 & -3192349.0 & 44.84\% \\ 
+ \hline
+ 'cumulative_high_temp_hours' removed & -2289867.8 & -2281135.1 & 16.10\% \\ 
+ \hline
+ 'eol_reached' removed & -1581716.7 & -1572983.9 & 29.73\% \\
+ \hline
+ 'usage_strategy' removed & -1682727.5 & -1673994.8 & 22.02\% \\
+ \hline
+\end{tabular}
+\end{center}
+
+
+\section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis}
+
+
 
 \section{Task 4: Unsupervised Deep Learning for Battery Degradation Analysis}
 
