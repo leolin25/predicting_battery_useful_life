@@ -39,6 +39,14 @@ It is important to analyse the correlation between covariates in the data as a h
     \label{fig:timetable}
 \end{figure}
 
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{corr_heatmap.png}}
+    \caption{Covariates in battery observations and battery metadata}
+    \label{fig:timetable}
+\end{figure}
+
 Figure 1 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature or accounting for it using regularization in the model.
 
 'pack_voltage_mean_v' has extremely high correlation values with 'pack_voltage_charge_v' and 'pack_voltage_discharge_v' (0.99 correlation coefficient for each). It also has lower but still significant correlation with 'soc_start_pct', 'soc_end_pct', 'high_soc_exposure_fraction' and 'low_soc_exposure_fraction'. This indicates that all these covariates are related and shouldn't all be put into the model together or it would cause multicollinearity.
@@ -143,9 +151,11 @@ The chosen model was GMM with n_component = 90 and covariance_type = 'full'.
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_1.png}}
-    \caption{Confusion matrix for test set}
+    \caption{Confusion matrix for test set (Accuracy: 75.4\%)}
     \label{fig:timetable}
 \end{figure}
+
+\subsection{Analysis of results}
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis }
 
