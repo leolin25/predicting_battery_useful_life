@@ -39,15 +39,15 @@ It is important to analyse the correlation between covariates in the data as a h
     \label{fig:timetable}
 \end{figure}
 
-Figure 2 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature.
+Figure 2 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature (feature engineering)
 
-Most correlated covariates made sense when reading the data card provided on the Kaggle webpage, and these can easily be combined to create a feature which avoids collinearity.
+Most of the correlations can be inferred from the Kaggle data card about the columns.
 
 \begin{itemize}
-    \item 'pack_temp_c' has 1.0 correlation coefficient with 'ambient_temp_c';
+    \item Temperature such as 'pack_temp_c' and 'ambient_temp_c'.
     \item 'charge_current_a' and 'discharge_current_a' have high correlation with 'charge_c_rate' and 'discharge_c_rate' respectively;
-    \item 'energy_discharged_kwh' has 0.91 correlation coefficent with 'depth_of_discharge_pct' and other significant correlation coefficient with 'soc_end_pct' and 'discharge_duration_min';
-    \item 'battery_age_days' and 'cycle_index' are highly correlated
+    \item Energy statistics such as 'energy_discharged_kwh' are highly correlated with each other.
+    \item 'battery_age_days' and 'cycle_index' are highly correlated with usgae of the battery.
 \end{itemize}
 
 \subsection{Feature separability by degradation status}
@@ -86,12 +86,12 @@ Analysing how degradation status changes across categorical features is importan
 
 \subsection{Feature selection and preprocessing}
 
-From EDA we can infer that the most predictive features for 'degradation_status' are features related to how long the battery has been used and the condition of the battery. The following features will be used in the model:
+Using patterns inferred from task 1 and testing combinations of parameters these parameters were found to be predictive of 'degradation_status':
 
 \begin{itemize}
     \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher. Process this feature as 1 when True and 0 when False.
-    \item 'equivalent_full_cycles', lots of features recorded how long the battery has been used, but this feature seems the like the most direct link to battery wear of them.
-    \item 'usage_strategy' was seen to be predictive in Figure 3 of a worsening degradation status, as more severe data was shown in bad batteries. This data was processed as an ordinal variable with 'Conservative' as 1 and 'Aggressive' as 4.
+    \item 'equivalent_full_cycles', this feature is the best feature for determining how used the battery was.
+    \item 'usage_strategy' was seen to be predictive in Figure 3 of a worsening degradation status. This data was processed as an ordinal variable with 'Conservative' as 1 and 'Aggressive' as 4.
 \end{itemize}
 
 Testing revealed that using more than these 3 features significantly reduced accuracy.
@@ -137,7 +137,7 @@ I chose to use a much larger amount of components (clusters) than the 3 labels p
 \end{tabular}
 \end{center}
 
-The GMM model uses a 'full' covariance type since it provides the most flexibility, and there is plenty of training data for it to work. The other covariance types assume some similarities in the clusters. The table above shows AIC, BIc and validation error for n_component breakpoints I tested, the model I chose to use had n_component = 90 since this model minimized BIC while also having a good validation error compared to the other models.
+In testing 'full' covariance type was the best since it provided the best flexibility. The table above shows AIC, BIC and validation error for n_component breakpoints I tested, the model I chose to use had n_component = 90 since this model minimized BIC while also having a good validation error compared to the other models.
 
 \begin{figure}[H]
     \centering
@@ -178,7 +178,7 @@ Looking at the table above, a few observations are notable. 'cumulative_high_tem
 
 \subsection{Feature selection and engineering}
 
-From task 1 and 2 it is evident that 'equivalent_full_cycles', 'eol_reached' and 'usage_strategy' are all important features to predicting 'degradation_status'. However, for 'Critical' degradation status it is important to add features to predict this rare class. Fig 2 shows that 'ambient_temp_c' is good for identifying 'Critical' and because the model has regularisation we can add back 'cumulative_high_temp_hours'.
+Good features for the unsupervised model is task 2 will clearly be good in the supervised model. However, for 'Critical' degradation status it is important to add features to predict this rare class. Fig 2 shows that 'ambient_temp_c' is good for identifying 'Critical' and because the model has regularisation we can add back 'cumulative_high_temp_hours'.
 
 Similar data preprocessing techniques are used here as in task 1 so categorical features such as 'eol_reached' and 'usage_strategy' are encoded as ordinal variables.
 
@@ -192,7 +192,29 @@ Unlike the supervised learning model in task 2, this model will be trained to le
 
 This task will be performed using the XGBoost classifier. This supervised learning model is highly accurate and has built-in regularisation to penalise complex models and prefer simpler models to prevent overfitting. In addition, the model can handle complex non-linear patterns across tabular data sets such as the one being used for this project. It also has benefits that improve the development of the model, such as feature importance diagnostics and quick speed. 
 
-Grid Search is the most widely used technique for hyperparameter tuning, which involves specifying a set of possible values for each hyperparameter and then training and evaluating the model for each combination. The hyperparameters to keep are the ones that maximise validation macro F1 scores. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' doesn't improve the validation loss.
+Grid Search was used for hyperparameter tuning and finds the best combination of hyperparameters in 'param_grid' to maximise macro F1 score. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' doesn't improve the validation loss.
+
+\begin{center}
+\begin{tabular}{||c c c||} 
+ \hline
+ Hyperparameter & Search Space & Optimal Value \\ [0.5ex] 
+ \hline\hline
+ max\_depth & [3, 5, 7, 9] & 5 \\ 
+ \hline
+ min\_child\_weight & [1, 3, 6] & 5 \\ 
+ \hline
+ subsample & [0.6, 0.7, 0.8, 1.0] & 0.8 \\ 
+ \hline
+ colsample\_bytree & [0.6, 0.7, 0.8, 1.0] & 0.8 \\ 
+ \hline
+ reg\_alpha & [0.0, 0.1, 0.5, 1.0] & 0.5 \\ 
+ \hline
+ learning\_rate & [0.01, 0.03, 0.05, 0.1] & 0.05 \\ 
+ \hline
+ n\_estimators & [300, 500, 1000] & 1000 \\ 
+ \hline
+\end{tabular}
+\end{center}
 
 \subsection{Evaluation of the model}
 
@@ -240,7 +262,7 @@ The recall and precision of 'Critical' is low, when the model predicts 'Critical
 
 The table and plot show the features that were good in the unsupervised model are still good in this model. 'eol_reached' being low on the plot is deceptive since it doesn't have much weight (not split on much) however when split on there is massive loss reduction (gain). 
 
-Both these figures show all features either have high weight (split on a lot) or high gain (massive loss reduction). 
+Both these figures show all features either have high weight (split on a lot) or good gain (massive loss reduction). The engineered feature 'resistance_growth' is promising.
 
 \section{Task 4: Unsupervised Deep Learning for Battery Degradation Analysis}
 
