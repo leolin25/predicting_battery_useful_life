@@ -178,7 +178,7 @@ Looking at the table above, a few observations are notable. 'cumulative_high_tem
 
 \subsection{Feature selection and engineering}
 
-From task 1 and 2 it is evident that 'equivalent_full_cycles', 'eol_reached' and 'usage_strategy' are all important features to predicting 'degradation_status'. However, for 'Critical' degradation status it is important to add features to predict this rare class.
+From task 1 and 2 it is evident that 'equivalent_full_cycles', 'eol_reached' and 'usage_strategy' are all important features to predicting 'degradation_status'. However, for 'Critical' degradation status it is important to add features to predict this rare class. Fig 2 shows that 'ambient_temp_c' is good for identifying 'Critical' and because the model has regularisation we can add back 'cumulative_high_temp_hours'.
 
 Similar data preprocessing techniques are used here as in task 1 so categorical features such as 'eol_reached' and 'usage_strategy' are encoded as ordinal variables.
 
@@ -192,15 +192,51 @@ Unlike the supervised learning model in task 2, this model will be trained to le
 
 This task will be performed using the XGBoost classifier. This supervised learning model is highly accurate and has built-in regularisation to penalise complex models and prefer simpler models to prevent overfitting. In addition, the model can handle complex non-linear patterns across tabular data sets such as the one being used for this project. It also has benefits that improve the development of the model, such as feature importance diagnostics and quick speed. 
 
-Grid Search is the most widely used technique for hyperparameter tuning, which involves specifying a set of possible values for each hyperparameter and then training and evaluating the model for each combination. The hyperparameters to keep are the ones that maximise validation macro F1 scores.
+Grid Search is the most widely used technique for hyperparameter tuning, which involves specifying a set of possible values for each hyperparameter and then training and evaluating the model for each combination. The hyperparameters to keep are the ones that maximise validation macro F1 scores. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' doesn't improve the validation loss.
 
 \subsection{Evaluation of the model}
 
-Macro F1 scores are the average F1 scores across all classes and a good way of evaluating the model since it is predicting multiple classes. Since there is a large class imbalance, this metric should find the model that balances the classes the best.
+Macro F1 score is the average F1 scores across all classes and a good way of evaluating the model since it is predicting multiple classes. Since there is a large class imbalance, this metric should find the model that balances the classes the best.
 
-This
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_2.png}}
+    \caption{Confusion matrix for test set (Accuracy: 85.56\%)}
+    \label{fig:timetable}
+\end{figure}
+
+The recall and precision of 'Critical' is low, when the model predicts 'Critical' it is most of the time a 'Severe' point. The model performs well on the other 3 classes, especially 'Normal'. The most common error was predicting 'Moderate' as a 'Severe'. 
 
 \subsection{Feature importance}
+
+\begin{center}
+\begin{tabular}{||c c c c||} 
+ \hline
+ Feature & Gain & Weight & Cover \\ [0.5ex] 
+ \hline\hline
+ eol\_reached & 125.435112 & 1608.0 & 4413.442383 \\ 
+ \hline
+ equivalent\_full\_cycles & 99.647728 & 11297.0 & 3765.045654 \\ 
+ \hline
+ usage\_strategy & 47.151421 & 3219.0 & 3048.288574 \\ 
+ \hline
+ resistance\_growth & 44.798866 & 9023.0 & 2302.284180 \\ 
+ \hline
+ depth\_of\_discharge\_pct & 42.865730 & 4815.0 & 2514.131592 \\ 
+ \hline
+ ambient\_temp\_c & 39.376331 & 8320.0 & 2595.524902 \\ 
+ \hline
+ cumulative\_high\_temp\_hours & 32.494751 & 7254.0 & 3034.156006 \\ 
+ \hline
+\end{tabular}
+\end{center} 
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{fea.png}}
+    \caption{Confusion matrix for test set (Accuracy: 85.56\%)}
+    \label{fig:timetable}
+\end{figure}
 
 \section{Task 4: Unsupervised Deep Learning for Battery Degradation Analysis}
 
