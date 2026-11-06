@@ -233,10 +233,14 @@ The recall and precision of 'Critical' is low, when the model predicts 'Critical
 
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{fea.png}}
-    \caption{Confusion matrix for test set (Accuracy: 85.56\%)}
+    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{feature_importance.png}}
+    \caption{Built-in feature importance plot (importance is dependent on weight)}
     \label{fig:timetable}
 \end{figure}
+
+The table and plot show the features that were good in the unsupervised model are still good in this model. 'eol_reached' being low on the plot is deceptive since it doesn't have much weight (not split on much) however when split on there is massive loss reduction (gain). 
+
+Both these figures show all features either have high weight (split on a lot) or high gain (massive loss reduction). 
 
 \section{Task 4: Unsupervised Deep Learning for Battery Degradation Analysis}
 
