@@ -24,9 +24,9 @@
 
 \subsection{Characteristics of the data}
 
-Something important to note is that the battery dataset has much less data for batteries on 'Critical' degradation status. There are 60569 rows about 'Normal'; 60434 rows about 'Moderate'; 51606 rows about 'Severe'; and 170 rows about 'Critical' degradation status. This is a major class imbalance and means that the model needs different metrics to evaluate its effectiveness compared to if the dataset had balanced classes.
+There are 60569 rows about 'Normal'; 60434 rows about 'Moderate'; 51606 rows about 'Severe'; and 170 rows about 'Critical' degradation status. This shows there is major class imbalance and that accuracy is not a good metric since ignoring 'Critical' status would not affect accuracy a lot.
 
-Additionally, the only NaN values in the data set are in 'pack_temp_c'. All other columns have 0 NaN values and this column has 1727 NaN values. This heavily discourages using 'pack_temp_c' as a feature and instead using 'ambient_temp_c' which is highly correlated with 'pack_temp_c' but with 0 NaN values.
+Additionally, the only NaN values in the data set are in 'pack_temp_c'. All other columns have 0 NaN values, and this column has 1727 NaN values. This heavily discourages using 'pack_temp_c' as a feature and instead using 'ambient_temp_c' which is highly correlated with 'pack_temp_c' but with 0 NaN values.
 
 \subsection{Correlation Analysis}
 
@@ -39,11 +39,9 @@ It is important to analyse the correlation between covariates in the data as a h
     \label{fig:timetable}
 \end{figure}
 
-Figure 2 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature or accounting for it using regularization in the model.
+Figure 2 shows there is some high correlation between some of the covariates of the data, the most notable example being the relationship between 'pack_voltage_mean_v' and 'pack_voltage_discharge_v' which has a correlation value of 0.99. So when using the data to predict 'degradation_status' multicollinearity needs to be accounted for. This can usually be done by combining covariates into a single feature.
 
-'pack_voltage_mean_v' has extremely high correlation values with 'pack_voltage_charge_v' and 'pack_voltage_discharge_v' (0.99 correlation coefficient for each). It also has lower but still significant correlation with 'soc_start_pct', 'soc_end_pct', 'high_soc_exposure_fraction' and 'low_soc_exposure_fraction'. This indicates that all these covariates are related and shouldn't all be put into the model together or it would cause multicollinearity.
-
-Most correlated covariates made sense when reading the data card provided on the Kaggle webpage and these can easily be combined to create a feature which avoids collinearity.
+Most correlated covariates made sense when reading the data card provided on the Kaggle webpage, and these can easily be combined to create a feature which avoids collinearity.
 
 \begin{itemize}
     \item 'pack_temp_c' has 1.0 correlation coefficient with 'ambient_temp_c';
@@ -68,7 +66,7 @@ We can see that most covariates are not separable by 'degradation_status'. Howev
 \begin{itemize}
     \item 'battery_age_days', 'equivalent_full_cycles' and 'cycle_index' are highly correlated with this covariate and therefore all of these covariates are highly predictive for 'degradation_status'. This shows that usage is an important factor when predictive 'degradation_status'.
     \item 'pack_temp_c' is different when 'degradation_status' is critical. This indicates that high heat and damaging usage of the battery can specifically leave the battery in a critical condition.
-    \item 'cumulative_high_temp_hours' exhibits increasing interquartile ranges as the degradation status worsens.
+    \item 'cumulative_high_temp_hours' exhibits increasing interquartile ranges as the degradation status worsens, this is an example of usage and high heat damaging.
 \end{itemize}
 
 \subsection{Degradation status by categorical features}
@@ -98,6 +96,8 @@ From EDA we can infer that the most predictive features for 'degradation_status'
 
 Testing revealed that using more than these 3 features significantly reduced accuracy.
 
+Using GMM means that the features need to be normalised otherwise large scale features can take over the model. Important is to use the training data's mean and standard deviation for features to standardise the validation and test data set features.
+
 \subsection{Unsupervised Learning Model}
 
 Since this is a classification problem, the most appropriate unsupervised model is a clustering algorithm. I chose to use a GMM (Guassian Mixture Models) since from testing k-means on the data it shows that the spherical assumption of k-means does not work well on the data. GMM is more flexible and allows for non-spherical-shaped clusters which fit the data much better and results in lower error.
@@ -109,7 +109,7 @@ Since this is a classification problem, the most appropriate unsupervised model 
     \label{fig:timetable}
 \end{figure}
 
-As seen in Figure 1, there is a massive imbalance of classes in the training data, with only small amount of data being 'Critical' degradation status I decided it would be better to ignore this degradation status for this model since it would be extremely difficult for any unsupervised learning algorithm to learn this very small class.
+As seen in Figure 1, there is a massive imbalance of classes in the training data, with only small amount of data being 'Critical' degradation status. This means that a big weakness of this model is that the 'Critical' status will never be predicted since it won't be a majority in any of the clusters. The clusters will be set to whatever label is the most present inside it.
 
 I chose to use a much larger amount of components (clusters) than the 3 labels predicted (not including 'Critical'). Testing using a lower number of components showed that a low number of components is insufficient to predict the labels in the data. 
 
@@ -165,7 +165,7 @@ The features considered for the model were 'equivalent_full_cycle', 'eol_reached
  \hline
  'cumulative_high_temp_hours' removed & -2289867.8 & -2281135.1 & 16.10\% \\ 
  \hline
- 'eol_reached' removed & -1581716.7 & -1572983.9 & 29.73\% \\
+ '  eol_reached' removed & -1581716.7 & -1572983.9 & 29.73\% \\
  \hline
  'usage_strategy' removed & -1682727.5 & -1673994.8 & 22.02\% \\
  \hline
@@ -176,7 +176,31 @@ Looking at the table above, a few observations are notable. 'cumulative_high_tem
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis}
 
-\subsection{Feature Selection and Engineering}
+\subsection{Feature selection and engineering}
+
+From task 1 and 2 it is evident that 'equivalent_full_cycles', 'eol_reached' and 'usage_strategy' are all important features to predicting 'degradation_status'. However, for 'Critical' degradation status it is important to add features to predict this rare class.
+
+Similar data preprocessing techniques are used here as in task 1 so categorical features such as 'eol_reached' and 'usage_strategy' are encoded as ordinal variables.
+
+The data card explains that the internal resistance of the pack increases as the battery degrades so 'resistance_growth' could be a good feature to add. This feature is calculated as 'internal_resistance_mOhm' / ('cycle_index' + 1).
+
+XGBoost doesn't require standardised features unlike the previous model so we can keep all features as they are.
+
+\subsection{Supervised Learning Model}
+
+Unlike the supervised learning model in task 2, this model will be trained to learn the 'Critical' degradation status since supervised learning models are given target labels, which means they can more easily identify this narrow 0.1\% of the data.
+
+This task will be performed using the XGBoost classifier. This supervised learning model is highly accurate and has built-in regularisation to penalise complex models and prefer simpler models to prevent overfitting. In addition, the model can handle complex non-linear patterns across tabular data sets such as the one being used for this project. It also has benefits that improve the development of the model, such as feature importance diagnostics and quick speed. 
+
+Grid Search is the most widely used technique for hyperparameter tuning, which involves specifying a set of possible values for each hyperparameter and then training and evaluating the model for each combination. The hyperparameters to keep are the ones that maximise validation macro F1 scores.
+
+\subsection{Evaluation of the model}
+
+Macro F1 scores are the average F1 scores across all classes and a good way of evaluating the model since it is predicting multiple classes. Since there is a large class imbalance, this metric should find the model that balances the classes the best.
+
+This
+
+\subsection{Feature importance}
 
 \section{Task 4: Unsupervised Deep Learning for Battery Degradation Analysis}
 
