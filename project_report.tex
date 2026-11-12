@@ -278,11 +278,21 @@ Hyperparamer tuning:
     \item Latent space was tested at 2, 3 and 4. Of these 3 options latent_size=4 was the most successful at reducing macro F1 score.
     \item Gamma is a weighting coefficient that balances clustering loss and reconstruction loss, by default it is set to 0.1. The default is good and creates the best balance in clusters from my testing.
     \item Noise_std is the standard deviation of the Gaussian noise added to input data, this value is set to 0.15 to force autoencoder to learn patterns in the data.
+    \item n_clusters, since task 2 showed over-clustering helped the approach was to start with high clusters and work down. n_clusters=6 was a good fit for the data.
 \end{itemize}
 
 The training procedure selected was the typical procedure for IDEC which was pretraining the denoising autoencoder using reconstruction loss and then running K-means to initialise cluster centers on the latent space. The next stage of training is joint reconstruction and clustering optimisation to minimise the combined loss function. This procedure is recommended for tabular data and for quite low-dimension data which this problem fitted.
 
 \subsection{Analysis and interpretation of the learned representations}
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{latent_corr.png}}
+    \caption{Features correlation with latent space dimensions}
+    \label{fig:timetable}
+\end{figure}
+
+This figure shows the
 
 \subsection{Usefulness of features}
 
