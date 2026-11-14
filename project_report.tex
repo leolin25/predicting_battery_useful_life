@@ -63,18 +63,14 @@ Visualising covariates by 'degradation_status' can help find patterns or trends 
 Some covariates show different patterns depending on 'degradation status'
 
 \begin{itemize}
-    \item Usage seems like the most important factor for determining 'degradation_status'. 'equivalent_full_cycles' has a median of about 70 for 'Normal', 210 for 'Moderate' and 350 for 'Severe' and 'Critical'. This indicates an old battery is likely to be in a degraded state.
-    \item 'ambient_temp_c' has an unusual median for 'Critical' status. This is most likely an anomaly since 'Critical' batteries having lower 'ambient_temp_c' makes little sense and could be caused by 'Critical' having a low class count.
+    \item Usage seems like the most important factor for determining 'degradation_status'. 'equivalent_full_cycles' has a median of about 70 for 'Normal', 210 for 'Moderate' and 350 for 'Severe' and 'Critical'. This indicates a highly used battery is likely to be in a degraded state.
+    \item 'depth_of_discharge_pct' and 'internal_resistance_mOhm' showed to have differing medians when the degradation status changed. These features are highly indicative of the stress a battery has been exposed to and could predict degradation status.
+    \item 'cumulative_high_temp_hours' has an increasing interquartile range for worsing degradation. This indicates that all batteries have a similar value for this feature but high values are more likely from worsening degradation.
 \end{itemize}
-
-
-
-
-'cumulative_high_temp_hours' has an increasing amount of high values for more degraded batteries. This feature might be useful.
 
 \subsection{Degradation status by categorical features}
 
-Analysing how degradation status changes across categorical features is important. To visualise this we can use a stacked bar chart.
+A similar analysis can be done on categorical features using stacked bar charts.
 
 \begin{figure}[H]
     \centering
@@ -83,51 +79,48 @@ Analysing how degradation status changes across categorical features is importan
     \label{fig:timetable}
 \end{figure}
 
-'eol_reached' and 'usage_strategy' both appear to be highly predictive features for 'degradation_status'. In this plot 0 is False and 1 is True, when a battery reaches end of life it most likely means heavy usage and relates to the pattern that covariates that track usage are highly predictive of the degradation status.
+\begin{itemize}
+    \item 'eol_reached' has much more 'Severe' data when true.
+    \item 'usage_stratgey' has much less 'Severe' data when it is conservative.
+\end{itemize}
+
+Both features are useful for predicting degradation status. However, 'eol_reached' is probably more significant since it has a much sharper difference, where 'usage_strategy' is more stable across all categories.
 
 \section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
 
 \subsection{Feature selection and preprocessing}
 
-Using patterns inferred from task 1 and testing combinations of parameters these parameters were found to be predictive of 'degradation_status':
+A GMM is used for the model since testing with K-means revealed that the spherical assumption is not met with the data in this project. GMM is more flexible and allows for non-spherical clusters. The clusters will be set to the class that is most present in the cluster (majority voting), because of the class imbalance shown in Fig 1, this means 'Critical' class will not be predicted.
+
+GMM doesn't do well with ordinal or boolean covariates, so choose continuous covariates. 'cumulative_high_temp_hours' not included since it performed badly in validation tests.
 
 \begin{itemize}
-    \item 'eol_reached', when this feature is True the probability of the degradation status being critical or severe is significantly higher. Encode this feature as 1 when true and 0 when false.
-    \item 'equivalent_full_cycles', this feature is the best feature for determining how used the battery was.
-    \item 'usage_strategy' was seen to be predictive in Figure 3 of a worsening degradation status. This data was encoded as an ordinal variable with 'Conservative' as 1 and 'Aggressive' as 4.
+    \item 'eol_reached'
+    \item 'depth_of_discharge_pct'
+    \item 'internal_resistance_mOhm'
 \end{itemize}
 
-Testing revealed that using more than these 3 features significantly reduced accuracy.
+Using GMM means the features must be standardised to not let any feature dominate. Importantly, the same standardisation variable used for training must also be used for validation and testing data to avoid data leakage.
 
-Using GMM means that the features need to be normalised otherwise large scale features can dominate other features. The training data is used to standardise the features of validation and test data as well as to prevent data leakage.
-
-\subsection{Unsupervised Learning Model}
-
-For this task a GMM (Gaussian Mixture Models) was chosen, since from testing k-means on the data it shows that the spherical assumption of k-means does not work well on the data. GMM is more flexible and allows for non-spherical-shaped clusters which fit the data much better.
-
-The clusters will be set to the class that is most present in the cluster (majority voting), because of the class imbalance shown in Fig 1 however, this means 'Critical' class will not be predicted.
-
-Testing values of n_components showed that over-clustering was the best approach.
+In testing, the 'full' covariance type was the best since it provided the best flexibility which is needed for this data. Testing values of n_components on validation showed that over-clustering was the best approach.
 
 \begin{center}
-\begin{tabular}{||c c c c||} 
+\begin{tabular}{||c c c c c||} 
  \hline
- n_components & AIC & BIC & Validation Error \\ [0.5ex] 
+ n_components & AIC & BIC & Macro F1 & Error\\ [0.5ex] 
  \hline\hline
- 60 & -2289737.4 & -2283918.7 & 16.81\% \\
+ 60 & 965406.2 & 971224.8 & 0.54 & 28.21\%\\
  \hline
- 70 & -2289852.1 & -2283062.2 & 16.32\% \\
+ 70 & 964804.7 & 971594.7 & 0.54 & 27.70\%\\
  \hline
- 80 & -2289939.3 & -2282178.0 & 16.67\% \\
+ 80 & 964696.9 & 972458.3 & 0.54 & 27.68\%\\
  \hline
- 90 & -2289867.8 & -2281135.1 & 16.10\% \\
- \hline
- 100 & -2289866.6 & -2280162.5 & 16.93\% \\
+ 90 & 964125.9 & 972858.6 & 0.53 & 28.76\% \\
  \hline
 \end{tabular}
 \end{center}
 
-In testing, the 'full' covariance type was the best since it provided the best flexibility which is needed for this data. The n_component used in the model was 90 since it minimised the validation error.
+The n_component used in the model was 70 since it has low AIC, BIC and validation error.
 
 \begin{figure}[H]
     \centering
@@ -142,22 +135,22 @@ The accuracy of the model was 80.96\% in the test data set. It is very difficult
 
 \subsection{Usefulness of features}
 
-The features considered for the model were 'equivalent_full_cycle', 'eol_reached', 'usage_strategy' and 'cumulative_high_temp_hours'. Task 1 showed these features could be useful. Compare usefulness by dropping covariates one at a time.
+The features considered for the model were 'equivalent_full_cycle', 'depth_of_discharge_pct', 'internal_resistance_mOhm' and 'cumulative_high_temp_hours'. Task 1 showed these features could be useful. Compare usefulness by dropping covariates one at a time.
 
 \begin{center}
-\begin{tabular}{||c c c c||} 
+\begin{tabular}{||c c||} 
  \hline
- Model & AIC & BIC & Validation Error \\ [0.5ex] 
+ Model & Validation Error \\ [0.5ex] 
  \hline\hline
- All 4 covariates included & -3001961.6 &-2988857.6 & 27.90\% \\ 
+ All 4 covariates included & 40.20\% \\ 
  \hline
- 'equivalent_full_cycle' removed & -3201081.7 & -3192349.0 & 44.84\% \\ 
+ 'equivalent_full_cycle' removed  & 55.45\% \\ 
  \hline
- 'cumulative_high_temp_hours' removed & -2289867.8 & -2281135.1 & 16.10\% \\ 
+ 'cumulative_high_temp_hours' removed & 28.21\% \\ 
  \hline
- 'eol_reached' removed & -1581716.7 & -1572983.9 & 29.73\% \\
+ 'depth_of_discharge_pct' removed & 36.54\% \\
  \hline
- 'usage_strategy' removed & -1682727.5 & -1673994.8 & 22.02\% \\
+ 'internal_resistance_mOhm' removed & 30.34\% \\
  \hline
 \end{tabular}
 \end{center}
