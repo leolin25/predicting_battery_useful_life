@@ -168,7 +168,7 @@ This task will be done with XGBoost classifier.
 
 \subsection{Feature selection and engineering}
 
-Good features for the unsupervised model is task 2 will clearly be good in the supervised model. However, for 'Critical' degradation status it is important to add features to predict this rare class. Trying to add 'ambient_temp_c', 'cumulative_high_temp_hours' and 'depth_of_discharge_pct' as battery stress factors could be good. This model has regularization, so noisy features won't affect the model as much unlike GMM.
+The features that were good in task 2 will be used in this model as well. Adding more features such as 'ambient_temp_c', 'cumulative_high_temp_hours' and 'depth_of_discharge_pct' as battery stress factors could be good. This model has regularization, so noisy features won't affect the model as much unlike GMM.
 
 Similar data preprocessing techniques are used here as in task 1 so categorical features such as 'eol_reached' and 'usage_strategy' are encoded as ordinal variables.
 
@@ -180,7 +180,7 @@ XGBoost doesn't require standardised features unlike the previous model so we ca
 
 Unlike the unsupervised learning model in task 2, this model will be trained to learn the 'Critical' degradation status since supervised learning models are given target labels, which means they can more easily identify this narrow 0.1\% of the data.
 
-Grid Search was used for hyperparameter tuning and finds the best combination of hyperparameters in 'param_grid' to maximise macro F1 score. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' doesn't improve the validation loss.
+Grid Search was used for hyperparameter tuning and finds the best combination of hyperparameters to maximise macro F1 score. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' doesn't improve the validation loss.
 
 \begin{center}
 \begin{tabular}{||c c c||} 
@@ -206,7 +206,7 @@ Grid Search was used for hyperparameter tuning and finds the best combination of
 
 \subsection{Evaluation of the model}
 
-Macro F1 score is the average F1 scores across all classes and a good way of evaluating the model since it is predicting multiple classes. Since there is a large class imbalance, this metric should find the model that balances the classes the best.
+Macro F1 score is the best evaluation metric to use since this is a classification problem. This is the confusion matrix for the model that maximised macro F1.
 
 \begin{figure}[H]
     \centering
@@ -215,7 +215,7 @@ Macro F1 score is the average F1 scores across all classes and a good way of eva
     \label{fig:timetable}
 \end{figure}
 
-The recall and precision of 'Critical' is low, when the model predicts 'Critical' it is most of the time a 'Severe' point. The model performs well on the other 3 classes, especially 'Normal'. The most common error was predicting 'Moderate' as a 'Severe'. 
+The recall and precision of 'Critical' is low, when the model predicts 'Critical' it is most of the time a 'Severe' point. The model performs very well on the other 3 classes, especially 'Normal'.
 
 \subsection{Feature importance}
 
@@ -256,13 +256,13 @@ IDEC model requires features to be standardised before effective use. So, the fe
 Hyperparamer tuning:
 
 \begin{itemize}
-    \item Latent space was tested at 2, 3 and 4. Latent space at 3 had the best macro F1 score while also having all latent factors being useful.
+    \item Latent space was tested at 2, 3 and 4. Latent space at 4 maximised macro F1 score.
     \item Gamma is a weighting coefficient that balances clustering loss and reconstruction loss, by default it is set to 0.1. The default is good and creates the best balance in clusters from my testing.
     \item Noise_std is the standard deviation of the Gaussian noise added to input data, this value is set to 0.15 to force autoencoder to learn patterns in the data.
-    \item n_clusters, since task 2 showed over-clustering helped the approach was to start with high clusters and work down. n_clusters=6 was a good fit for the data.
+    \item n_clusters, since task 2 showed over-clustering helped, the approach was to start with high clusters and work down. n_clusters=6 was a good fit for the data.
 \end{itemize}
 
-The training procedure selected was the typical procedure for IDEC which was pretraining the denoising autoencoder using reconstruction loss and then running K-means to initialise cluster centers on the latent space. The next stage of training is joint reconstruction and clustering optimisation to minimise the combined loss function. This procedure is recommended for tabular data and for quite low-dimension data which this problem fitted.
+The selected training procedure was the typical procedure for IDEC, which was pretraining the denoising autoencoder using reconstruction loss and then running K-means to initialise cluster centres on the latent space. The next stage of training is joint reconstruction and clustering optimisation to minimise the combined loss function. This procedure is recommended for tabular data and for quite low-dimension data which this problem fitted.
 
 \subsection{Analysis and interpretation of the learned representations}
 
@@ -279,16 +279,19 @@ This figure shows the correlation of the features with the dimensions in the lat
     \item z1 learnt heat factors and some time factors, this dimension captures heat stress over time.
     \item z2 is highly correlated with heat factors and 'depth_of_discharge_pct', this latent dimension captures the stress patterns of the battery
     \item z3 is similar to z1 and has captured the same pattern except it has a positive correlation with 'depth_of_discharge_pct'
-    \item z4 is related to the time factors and how long the battery has been used
 \end{itemize}
 
 \subsection{Usefulness of features}
 
+'equivalent_full_cycles', 'cumulative_high_temp_hours' and 'resistance_growth' are the most useful features and all had high correlation with the latent dimensions. Just like the tasks before, this shows that the usage of the battery is the most important factor for evaluating the degradation status.
+
+'ambient_temp_c' was slightly useful and captured the heat stress of the battery, it was used mostly in z1 and z3. 'depth_of_discharge_pct' was not useful for this model and had low correlation with all latent factors. These two features are consistently lower impact that the other features used.
+
 \section{Task 5: Supervised Deep Learning for Battery Degradation Analysis}
 
-\subsection{Supervised Deep Learning Model}
-
 A good supervised deep learning model for predicting degradation status is TabPFN.
+
+\subsection{Supervised Deep Learning Model}
 
 \subsection{Preprocessing, architecture and training strategy}
 
