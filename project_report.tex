@@ -20,9 +20,14 @@
 
 \subsection{Characteristics of the data}
 
-There are 60569 rows about 'Normal'; 60434 rows about 'Moderate'; 51606 rows about 'Severe'; and 170 rows about 'Critical' degradation status. This shows there is major class imbalance.
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.65\textwidth]{deg_pie_char.png}}
+    \caption{Percentage of each degradation status in the training data}
+    \label{fig:pie}
+\end{figure}
 
-Additionally, the only NaN values in the data set are in 'pack_temp_c'. All other columns have 0 NaN values, and this column has 1727 NaN values. This heavily discourages using 'pack_temp_c' as a feature and instead using 'ambient_temp_c' which is highly correlated with 'pack_temp_c' but with 0 NaN values.
+The figure above shows there is a massive class imbalance in the training data. Additionally, the data has no missing values for any features other than 'pack_temp_c'. Fig 2 later in the report shows that we can use 'ambient_temp_c' as a substitute for this.
 
 \subsection{Correlation Analysis}
 
@@ -46,7 +51,7 @@ Figure 2 shows there is some high correlation between some of the covariates of 
 
 \subsection{Feature separability by degradation status}
 
-Visualising covariate statistics by 'degradation_status' will allow us to see patterns in the data and identify which numerical covariates have a relationship with the target feature. Some covariates were not analysed since they were either highly correlated with another covariate which was already being analysed; had no impact on 'degradation_status'; or were a categorical covariate.
+Visualising covariates by 'degradation_status' can help find patterns or trends that could identify 'degradation status'. Covariates that were not shown in this plot were categorical covariates; covariates that were highly related to a covariate already in the plot; and irrelevant covariates.
 
 \begin{figure}[H]
     \centering
@@ -55,11 +60,15 @@ Visualising covariate statistics by 'degradation_status' will allow us to see pa
     \label{fig:timetable}
 \end{figure}
 
-We can see that most covariates are not separable by 'degradation_status'. However, some covariates could be predictive for the classification of degradation status such as:
+Some covariates show different patterns depending on 'degradation status'
 
-Usage seems like the most important factor for determining 'degradation_status'. 'equivalent_full_cycles' has a median of about 70 for 'Normal', 210 for 'Moderate' and 350 for 'Severe' and 'Critical'. This indicates an old battery is likely to be in a degraded state.
+\begin{itemize}
+    \item Usage seems like the most important factor for determining 'degradation_status'. 'equivalent_full_cycles' has a median of about 70 for 'Normal', 210 for 'Moderate' and 350 for 'Severe' and 'Critical'. This indicates an old battery is likely to be in a degraded state.
+    \item 'ambient_temp_c' has an unusual median for 'Critical' status. This is most likely an anomaly since 'Critical' batteries having lower 'ambient_temp_c' makes little sense and could be caused by 'Critical' having a low class count.
+\end{itemize}
 
-'ambient_temp_c' has an unusual median for 'Critical' status. This is most likely an anomaly since 'Critical' batteries having lower 'ambient_temp_c' makes little sense and could be caused by 'Critical' having a low class count.
+
+
 
 'cumulative_high_temp_hours' has an increasing amount of high values for more degraded batteries. This feature might be useful.
 
@@ -94,18 +103,11 @@ Using GMM means that the features need to be normalised otherwise large scale fe
 
 \subsection{Unsupervised Learning Model}
 
-Since this is a classification problem, the most appropriate unsupervised model is a clustering algorithm. I chose to use a GMM (Gaussian Mixture Models) since from testing k-means on the data it shows that the spherical assumption of k-means does not work well on the data. GMM is more flexible and allows for non-spherical-shaped clusters which fit the data much better and results in lower error.
+For this task a GMM (Gaussian Mixture Models) was chosen, since from testing k-means on the data it shows that the spherical assumption of k-means does not work well on the data. GMM is more flexible and allows for non-spherical-shaped clusters which fit the data much better.
 
-\begin{figure}[H]
-    \centering
-    \makebox[\textwidth][c]{\includegraphics[width=0.65\textwidth]{deg_pie_char.png}}
-    \caption{Percentage of each degradation status in the training data}
-    \label{fig:timetable}
-\end{figure}
+The clusters will be set to the class that is most present in the cluster (majority voting), because of the class imbalance shown in Fig 1 however, this means 'Critical' class will not be predicted.
 
-There is a massive imbalance of classes in the training data, with only small amount of data being 'Critical' degradation status. This means that a big weakness of this model is that the 'Critical' status will never be predicted since it won't be a majority in any of the clusters. The clusters will be set to whatever label is the most present inside it (majority voting).
-
-I chose to use a much larger amount of components (clusters) than the 3 labels predicted (not including 'Critical'). Testing using a lower number of components showed that a low number of components is insufficient to predict the labels in the data. 
+Testing values of n_components showed that over-clustering was the best approach.
 
 \begin{center}
 \begin{tabular}{||c c c c||} 
@@ -125,7 +127,7 @@ I chose to use a much larger amount of components (clusters) than the 3 labels p
 \end{tabular}
 \end{center}
 
-In testing 'full' covariance type was the best since it provided the best flexibility which is needed for this data. The table above shows AIC, BIC and validation error for n_component breakpoints I tested, the model I chose to use had n_component = 90 since this model minimized validation error while also having a good BIC compared to the other models.
+In testing, the 'full' covariance type was the best since it provided the best flexibility which is needed for this data. The n_component used in the model was 90 since it minimised the validation error.
 
 \begin{figure}[H]
     \centering
@@ -136,11 +138,11 @@ In testing 'full' covariance type was the best since it provided the best flexib
 
 \subsection{Analysis of results}
 
-The accuracy of the model was 80.96\% on the test data set. This is acceptable for an unsupervised learning model. The model was created to ignore the 'Critical' degradation status and hence has 0\% accuracy detecting this type. The model tends to 'underestimate' the degradation status and predicts 'Normal' for lots of 'Moderate' points and 'Moderate' for 'Severe' points. This indicates how there is little change between a single stage of change in the degradation status as it was the most common error for the model. Overall, the cluster groups do correspond to meaningful battery degradation behaviour.
+The accuracy of the model was 80.96\% in the test data set. It is very difficult for a clustering algorithm to detect the small 'Critical' class with majority voting but this cluster to class approach improved the rest of the class accuracies significantly. The model tends to 'underestimate' the degradation status and predicts 'Normal' for lots of 'Moderate' points and 'Moderate' for 'Severe' points. This indicates how there is little change between a single stage of change in the degradation status as it was the most common error for the model. Overall, the cluster groups do correspond to meaningful battery degradation behaviour.
 
 \subsection{Usefulness of features}
 
-The features considered for the model were 'equivalent_full_cycle', 'eol_reached', 'usage_strategy' and 'cumulative_high_temp_hours' since they varied the most when degradation status was changed as seen in task 1.
+The features considered for the model were 'equivalent_full_cycle', 'eol_reached', 'usage_strategy' and 'cumulative_high_temp_hours'. Task 1 showed these features could be useful. Compare usefulness by dropping covariates one at a time.
 
 \begin{center}
 \begin{tabular}{||c c c c||} 
@@ -153,14 +155,16 @@ The features considered for the model were 'equivalent_full_cycle', 'eol_reached
  \hline
  'cumulative_high_temp_hours' removed & -2289867.8 & -2281135.1 & 16.10\% \\ 
  \hline
- '  eol_reached' removed & -1581716.7 & -1572983.9 & 29.73\% \\
+ 'eol_reached' removed & -1581716.7 & -1572983.9 & 29.73\% \\
  \hline
  'usage_strategy' removed & -1682727.5 & -1673994.8 & 22.02\% \\
  \hline
 \end{tabular}
 \end{center}
 
-Looking at the table above, a few observations are notable. 'cumulative_high_temp_hours' was not as good as Figure 2 indicated the covariate would be and it increased error in every model it was included in. 'equivalent_full_cycle' was the most important feature by far as removing it made the error of the model extremely high. Both 'eol_reached' and 'usage_strategy' were not as useful as 'equivalent_full_cycle' but still improved the model with the inclusion.
+This shows that 'cumulative_high_temp_hours' was a noisy feature for this model and that 
+
+'cumulative_high_temp_hours' was the least impactful feature. 'equivalent_full_cycle' was the most important feature by far as removing it made the error of the model extremely high. Both 'eol_reached' and 'usage_strategy' were not as useful as 'equivalent_full_cycle' but still improved the model with the inclusion.
 
 \section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis}
 
@@ -264,6 +268,8 @@ Hyperparamer tuning:
 
 The selected training procedure was the typical procedure for IDEC, which was pretraining the denoising autoencoder using reconstruction loss and then running K-means to initialise cluster centres on the latent space. The next stage of training is joint reconstruction and clustering optimisation to minimise the combined loss function. This procedure is recommended for tabular data and for quite low-dimension data which this problem fitted.
 
+The clusters are then assigned to labels that are most common inside the cluster (majority voting).
+
 \subsection{Analysis and interpretation of the learned representations}
 
 \begin{figure}[H]
@@ -276,16 +282,17 @@ The selected training procedure was the typical procedure for IDEC, which was pr
 This figure shows the correlation of the features with the dimensions in the latent space.
 
 \begin{itemize}
-    \item z1 learnt heat factors and some time factors, this dimension captures heat stress over time.
-    \item z2 is highly correlated with heat factors and 'depth_of_discharge_pct', this latent dimension captures the stress patterns of the battery
-    \item z3 is similar to z1 and has captured the same pattern except it has a positive correlation with 'depth_of_discharge_pct'
+    \item z1 represents 'cumulative_high_temp_hours' in the latent space. This factor has a low correlation with degradation status.
+    \item z2 captures the amount of cycles the battery has been used for, as expected for a usage factor, it has high correlation with degradation status.
+    \item z3 represents the heat stress of the battery. This factor has no correlation with degradation status.
+    \item z4 represents the usage of the battery as it had high correlation with all usage features, as other tasks have shown, usage is the most important factor and this made z4 the best latent factor for clustering.
 \end{itemize}
 
 \subsection{Usefulness of features}
 
-'equivalent_full_cycles', 'cumulative_high_temp_hours' and 'resistance_growth' are the most useful features and all had high correlation with the latent dimensions. Just like the tasks before, this shows that the usage of the battery is the most important factor for evaluating the degradation status.
+'equivalent_full_cycles', 'cumulative_high_temp_hours' and 'resistance_growth' are the most useful features and all had high correlation with the latent dimensions. Just like the tasks before, this shows that the usage of the battery is the most important factor for evaluating the degradation status. 'cumulative_high_temp_hours' performs surprisingly well in the latent space, unlike in task 2 and task 3 this features was very useful.
 
-'ambient_temp_c' was slightly useful and captured the heat stress of the battery, it was used mostly in z1 and z3. 'depth_of_discharge_pct' was not useful for this model and had low correlation with all latent factors. These two features are consistently lower impact that the other features used.
+'ambient_temp_c' was slightly useful and captured the heat stress of the battery, it was used in most latent factors. 'depth_of_discharge_pct' was not useful for this model and had low correlation with all latent factors. These two features are consistently lower impact than other features in task 2 and task 3.
 
 \section{Task 5: Supervised Deep Learning for Battery Degradation Analysis}
 
