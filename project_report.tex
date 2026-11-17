@@ -16,14 +16,13 @@
     {Leo Lin 5592102\par}
 \end{center}
 
-\section{Task 1: Exploratory Data Analysis and Data Visualisation}
+\section{Task 1: Exploratory Data Analysis}
 
 \subsection{Characteristics of the data}
 
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.65\textwidth]{deg_pie_char.png}}
-    \caption{Percentage of each degradation status in the training data}
     \label{fig:pie}
 \end{figure}
 
@@ -40,7 +39,7 @@ It is important to analyse the correlation between covariates in the data as a h
     \label{fig:timetable}
 \end{figure}
 
-Figure 2 shows there is some high correlation between some of the covariates of the data. Most of the correlations can be inferred from the Kaggle data card about the columns.c 
+Figure 1 shows there is some high correlation between some of the covariates of the data.
 
 \begin{itemize}
     \item Temperature such as 'pack_temp_c' and 'ambient_temp_c'.
@@ -86,7 +85,7 @@ A similar analysis can be done on categorical features using stacked bar charts.
 
 Both features are useful for predicting degradation status. However, 'eol_reached' is probably more significant since it has a much sharper difference, where 'usage_strategy' is more stable across all categories.
 
-\section{Task 2: Unsupervised (Classic) Machine Learning for Battery Degradation Analysis}
+\section{Task 2: Gaussian Mixture Model}
 
 \subsection{Feature selection and preprocessing}
 
@@ -122,16 +121,16 @@ In testing, the 'full' covariance type was the best since it provided the best f
 
 The n_component used in the model was 70 since it has low AIC, BIC and validation error.
 
+\subsection{Analysis of results}
+
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_1.png}}
-    \caption{Confusion matrix for test set (Accuracy: 81.0\%)}
+    \caption{Confusion matrix for test set (Accuracy: 71.7\%)}
     \label{fig:timetable}
 \end{figure}
 
-\subsection{Analysis of results}
-
-The accuracy of the model was 80.96\% in the test data set. It is very difficult for a clustering algorithm to detect the small 'Critical' class with majority voting but this cluster to class approach improved the rest of the class accuracies significantly. The model tends to 'underestimate' the degradation status and predicts 'Normal' for lots of 'Moderate' points and 'Moderate' for 'Severe' points. This indicates how there is little change between a single stage of change in the degradation status as it was the most common error for the model. Overall, the cluster groups do correspond to meaningful battery degradation behaviour.
+The accuracy of the model was 71.7\% in the test data set. It is impossible for this clustering algorithm to detect the small 'Critical' class with majority voting but this approach improved the rest of the class accuracies significantly. The model predicts 'Normal' class very well. 'Moderate' has low precision since the model over-predicts the class and 'Severe' has low recall since it is commonly confused with 'Moderate' class.
 
 \subsection{Usefulness of features}
 
@@ -155,27 +154,19 @@ The features considered for the model were 'equivalent_full_cycle', 'depth_of_di
 \end{tabular}
 \end{center}
 
-This shows that 'cumulative_high_temp_hours' was a noisy feature for this model and that 
+This shows that 'cumulative_high_temp_hours' was a noisy feature for this model and was not useful. 'depth_of_discharge_pct' and 'internal_resistance_mOhm' provided some impact for underlying patterns of degradation status. However, 'equivalent_full_cycles' provided the most value as predicted in task 1.
 
-'cumulative_high_temp_hours' was the least impactful feature. 'equivalent_full_cycle' was the most important feature by far as removing it made the error of the model extremely high. Both 'eol_reached' and 'usage_strategy' were not as useful as 'equivalent_full_cycle' but still improved the model with the inclusion.
-
-\section{Task 3: Supervised (Classic) Machine Learning for Battery Degradation Analysis}
-
-This task will be done with XGBoost classifier.
+\section{Task 3: XGBoost Classifier}
 
 \subsection{Feature selection and engineering}
 
-The features that were good in task 2 will be used in this model as well. Adding more features such as 'ambient_temp_c', 'cumulative_high_temp_hours' and 'depth_of_discharge_pct' as battery stress factors could be good. This model has regularization, so noisy features won't affect the model as much unlike GMM.
+Features shown to be useful in task 2 will be included in this model as well. Additionally, we can add the useful categorical variables found in task 1. Categorical features such as 'eol_reached' and 'usage_strategy' are encoded as ordinal variables to make the model have cleaner splits.
 
-Similar data preprocessing techniques are used here as in task 1 so categorical features such as 'eol_reached' and 'usage_strategy' are encoded as ordinal variables.
-
-The data card explains that the internal resistance of the pack increases as the battery degrades so 'resistance_growth' could be a good feature to add. This feature is calculated as 'internal_resistance_mOhm' / ('cycle_index' + 1).
+The data card explains that the internal resistance of the pack increases as the battery degrades so 'resistance_growth' could be a good feature to add. This feature is calculated as 'internal_resistance_mOhm' / ('cycle_index' + 1). Since the model has regularisation we can add back 'cumulative_high_temp_hours' and 'ambient_temp_c'
 
 XGBoost doesn't require standardised features unlike the previous model so we can keep all features as they are.
 
 \subsection{Supervised Learning Model}
-
-Unlike the unsupervised learning model in task 2, this model will be trained to learn the 'Critical' degradation status since supervised learning models are given target labels, which means they can more easily identify this narrow 0.1\% of the data.
 
 Grid Search was used for hyperparameter tuning and finds the best combination of hyperparameters to maximise macro F1 score. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' doesn't improve the validation loss.
 
@@ -203,16 +194,14 @@ Grid Search was used for hyperparameter tuning and finds the best combination of
 
 \subsection{Evaluation of the model}
 
-Macro F1 score is the best evaluation metric to use since this is a classification problem. This is the confusion matrix for the model that maximised macro F1.
-
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_2.png}}
-    \caption{Confusion matrix for test set (Accuracy: 85.56\%)}
+    \caption{Confusion matrix for test set (Accuracy: 87.40\%)}
     \label{fig:timetable}
 \end{figure}
 
-The recall and precision of 'Critical' is low, when the model predicts 'Critical' it is most of the time a 'Severe' point. The model performs very well on the other 3 classes, especially 'Normal'.
+Macro F1 is the best metric since it is a classifcation problem. The macro F1 score on the test data is 0.65 and had class F1 scores at (0.92, 0.81, 0.84, 0.02). This shows the class imbalance makes 'Critical' a hard class to predict. However, the other 3 classes are predicted quite well.
 
 \subsection{Feature importance}
 
@@ -238,19 +227,21 @@ The recall and precision of 'Critical' is low, when the model predicts 'Critical
 \end{tabular}
 \end{center} 
 
-The table shows the features that were good in the unsupervised model are still good in this model. Each feature is shown to have either good gain or weight. Highly useful features such as 'equivalent_full_cycles' have both of these values high. 
+This table supports the findings in task 2. 'equivalent_full_cycles' is a top feature and 'cumulative_high_temp_hours' is a low impact feature. The categorical variables recommended in task 1 had high importance and the feature engineered covariate did improve on 'internal_resistance_mOhm'.
 
-\section{Task 4: Unsupervised Deep Learning for Battery Degradation Analysis}
+Supervised learning significantly improved prediction performance.
 
-This task will be completed using improved deep embedded clustering (IDEC). The model framework and training was created by generative AI.
+\section{Task 4: Improved Deep Embedded Clustering}
+
+This task will be completed using IDEC. The model framework and training was based on generative AI outputs.
 
 \subsection{Preprocessing and model design}
 
-The best features are 'equivalent_full_cycles', 'eol_reached' and 'usage_stategy' as seen in task 2 and 3, however standard IDEC uses MSE loss which performs poorly with discrete features, so for this model 'eol_reached' and 'usage_strategy' are omitted. Task 3 showed that 'resistance_growth', 'depth_of_discharge_pct', 'ambient_temp_c' and 'cumulative_high_temp_hours' are somewhat informative.
+Standard IDEC uses MSE loss, this performs poorly with categorical features so 'eol_reached' and 'usage_strategy' are omitted. Task 3 showed that 'resistance_growth', 'depth_of_discharge_pct', 'ambient_temp_c' and 'cumulative_high_temp_hours' are somewhat informative and could be useful in latent space.
 
 IDEC model requires features to be standardised before effective use. So, the features are standardised using sklearn.StandardScalar before being used in the model so that no features dominate.
 
-Hyperparamer tuning:
+Hyperparameters:
 
 \begin{itemize}
     \item Latent space was tested at 2, 3 and 4. Latent space at 4 maximised macro F1 score.
@@ -259,9 +250,9 @@ Hyperparamer tuning:
     \item n_clusters, since task 2 showed over-clustering helped, the approach was to start with high clusters and work down. n_clusters=6 was a good fit for the data.
 \end{itemize}
 
-The selected training procedure was the typical procedure for IDEC, which was pretraining the denoising autoencoder using reconstruction loss and then running K-means to initialise cluster centres on the latent space. The next stage of training is joint reconstruction and clustering optimisation to minimise the combined loss function. This procedure is recommended for tabular data and for quite low-dimension data which this problem fitted.
+The selected training procedure was the typical procedure for IDEC, which was pretraining the denoising autoencoder using reconstruction loss and then running K-means to initialise cluster centres on the latent space. The next stage of training is joint optimisation and clustering optimisation to minimise the combined loss function. This procedure is recommended for tabular data and for quite low-dimension data which this problem fitted.
 
-The clusters are then assigned to labels that are most common inside the cluster (majority voting).
+A denoising autoencoder is used to force the model to learn patterns in the data by adding noise and training to reconstruct the clean data. K-means initialisation is used to assign cluster centers. Joint optimisation is used to minimise the combined loss function with soft-clustering using student t-distribution. Clusters are assigned to the class that are most common inside (majority voting).
 
 \subsection{Analysis and interpretation of the learned representations}
 
@@ -278,7 +269,7 @@ This figure shows the correlation of the features with the dimensions in the lat
     \item z1 represents 'cumulative_high_temp_hours' in the latent space. This factor has a low correlation with degradation status.
     \item z2 captures the amount of cycles the battery has been used for, as expected for a usage factor, it has high correlation with degradation status.
     \item z3 represents the heat stress of the battery. This factor has no correlation with degradation status.
-    \item z4 represents the usage of the battery as it had high correlation with all usage features, as other tasks have shown, usage is the most important factor and this made z4 the best latent factor for clustering.
+    \item z4 represents battery usage as it had a high correlation with all usage features, as other tasks have shown, usage is the most important factor and this made z4 the best latent factor for clustering.
 \end{itemize}
 
 \subsection{Usefulness of features}
@@ -287,13 +278,37 @@ This figure shows the correlation of the features with the dimensions in the lat
 
 'ambient_temp_c' was slightly useful and captured the heat stress of the battery, it was used in most latent factors. 'depth_of_discharge_pct' was not useful for this model and had low correlation with all latent factors. These two features are consistently lower impact than other features in task 2 and task 3.
 
-\section{Task 5: Supervised Deep Learning for Battery Degradation Analysis}
-
-A good supervised deep learning model for predicting degradation status is TabPFN.
-
-\subsection{Supervised Deep Learning Model}
+\section{Task 5: TabNet Classifier}
 
 \subsection{Preprocessing, architecture and training strategy}
+
+Using the features selected in task 3, all of them had some positive impact in XGBoost as seen in section 3.4 and makes a better comparison with task 3. 
+
+This project uses the torch implementation of TabNet. Inverse class-frequency weighting was used to ensure that the model predicted the small 'Critical' class. 
+
+Random search is used instead of grid search since searching through all combinations of hyperparameters would take too long. This was tested using common values used for these hyperparameters and maximising validation macro F1.
+
+\begin{center}
+\begin{tabular}{||c c c||} 
+ \hline
+ Hyperparameter & Search Space & Optimal Value \\ [0.5ex] 
+ \hline\hline
+ n\_da \& n\_a & [8, 16, 24, 32] & 16 \\ 
+ \hline
+ n\_steps & [3, 4, 5] & 4 \\ 
+ \hline
+ gamma & [1.0, 1.3, 1.5, 1.7] & 1.0 \\ 
+ \hline
+ lambda\_sparse & [1e-4, 1e-3, 1e-2] & 1e-4 \\ 
+ \hline
+ lr & [1e-2, 2e-2, 3e-2] & 1e-2 \\ 
+ \hline
+ batch\_size & [512, 1024, 2048] & 2048 \\ 
+ \hline
+\end{tabular}
+\end{center}
+
+TabNet works better with larger batch sizes compared to other models; however, these create poor generalisations so the model is trained using mini-batch gradient descent. It optimises using the typical optimiser for TabNet which is AdamW.
 
 \subsection{Evaluation of classification performance}
 
