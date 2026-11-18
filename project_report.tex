@@ -30,7 +30,7 @@ The figure above shows there is a massive class imbalance in the training data. 
 
 \subsection{Correlation Analysis}
 
-It is important to analyse the correlation between covariates in the data as a high correlation between covariates could cause multicollinearity which could affect the weighting of some covariates. This can be done using a correlation heat map.
+Figure 1 reveals strong multicollinearity among several covariate groups:
 
 \begin{figure}[H]
     \centering
@@ -38,8 +38,6 @@ It is important to analyse the correlation between covariates in the data as a h
     \caption{Covariates in battery observations and battery metadata}
     \label{fig:timetable}
 \end{figure}
-
-Figure 1 shows there is some high correlation between some of the covariates of the data.
 
 \begin{itemize}
     \item Temperature such as 'pack_temp_c' and 'ambient_temp_c'.
@@ -78,18 +76,13 @@ A similar analysis can be done on categorical features using stacked bar charts.
     \label{fig:timetable}
 \end{figure}
 
-\begin{itemize}
-    \item 'eol_reached' has much more 'Severe' data when true.
-    \item 'usage_stratgey' has much less 'Severe' data when it is conservative.
-\end{itemize}
-
-Both features are useful for predicting degradation status. However, 'eol_reached' is probably more significant since it has a much sharper difference, where 'usage_strategy' is more stable across all categories.
+In Figure 3, 'eol_reached' (true) and non-conservative 'usage_strategy' show substantially higher 'Severe' proportions. Both could be useful, though 'eol_reached' provides sharper class separation.
 
 \section{Task 2: Gaussian Mixture Model}
 
 \subsection{Feature selection and preprocessing}
 
-A GMM is used for the model since testing with K-means revealed that the spherical assumption is not met with the data in this project. GMM is more flexible and allows for non-spherical clusters. The clusters will be set to the class that is most present in the cluster (majority voting), because of the class imbalance shown in Fig 1, this means 'Critical' class will not be predicted.
+GMM is used instead of K-means because the data violates spherical cluster assumptions, requiring full-covariance non-spherical clusters. The clusters will be set to the class that is most present in the cluster (majority voting), because of the class imbalance shown in Fig 1, this means 'Critical' class will not be predicted.
 
 GMM doesn't do well with ordinal or boolean covariates, so choose continuous covariates. 'cumulative_high_temp_hours' not included since it performed badly in validation tests.
 
@@ -130,7 +123,7 @@ The n_component used in the model was 70 since it has low AIC, BIC and validatio
     \label{fig:timetable}
 \end{figure}
 
-The accuracy of the model was 71.7\% in the test data set. It is impossible for this clustering algorithm to detect the small 'Critical' class with majority voting but this approach improved the rest of the class accuracies significantly. The model predicts 'Normal' class very well. 'Moderate' has low precision since the model over-predicts the class and 'Severe' has low recall since it is commonly confused with 'Moderate' class.
+It is impossible for this clustering algorithm to detect the small 'Critical' class with majority voting but this approach improved the rest of the class accuracies significantly. The model predicts 'Normal' class very well. 'Moderate' has low precision since the model over-predicts the class and 'Severe' has low recall since it is commonly confused with 'Moderate' class.
 
 \subsection{Usefulness of features}
 
@@ -197,11 +190,11 @@ Grid Search was used for hyperparameter tuning and finds the best combination of
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_2.png}}
-    \caption{Confusion matrix for test set (Accuracy: 87.40\%)}
+    \caption{Confusion matrix for test set (Accuracy: 83\%)}
     \label{fig:timetable}
 \end{figure}
 
-Macro F1 is the best metric since it is a classification problem. The macro F1 score on the test data is 0.66 and had class F1 scores at (0.93, 0.82, 0.86, 0.0). Even with class weights added it doesn't help the model predict 'Critical'. However, the other 3 classes are predicted quite well.
+Macro F1 is the best metric since it is a classification problem. The macro F1 score on the test data is 0.62 and had class F1 scores at (0.89, 0.76, 0.83, 0.0). Even with class weights added it doesn't help the model predict 'Critical'. However, the other 3 classes are predicted quite well.
 
 \subsection{Feature importance}
 
@@ -227,9 +220,9 @@ Macro F1 is the best metric since it is a classification problem. The macro F1 s
 \end{tabular}
 \end{center} 
 
-This table supports the findings in task 2. 'equivalent_full_cycles' is a top feature and 'cumulative_high_temp_hours' is a low impact feature. The categorical variables recommended in task 1 had high importance and the feature engineered covariate did improve on 'internal_resistance_mOhm'.
+This table supports the findings in task 2. 'equivalent_full_cycles' is a top feature and 'cumulative_high_temp_hours' is a low impact feature. The categorical variables recommended in task 1 had high importance and the engineered covariate did improve 'internal_resistance_mOhm'.
 
-Supervised learning significantly improved prediction performance.
+Supervised learning improved prediction performance.
 
 \section{Task 4: Improved Deep Embedded Clustering}
 
@@ -239,9 +232,7 @@ This task will be completed using IDEC. The model framework and training was bas
 
 Standard IDEC uses MSE loss, this performs poorly with categorical features so 'eol_reached' and 'usage_strategy' are omitted. Task 3 showed that 'resistance_growth', 'depth_of_discharge_pct', 'ambient_temp_c' and 'cumulative_high_temp_hours' are somewhat informative and could be useful in latent space.
 
-IDEC model requires features to be standardised before effective use. So, the features are standardised using sklearn.StandardScalar before being used in the model so that no features dominate.
-
-Hyperparameters:
+Features are standardised so that IDEC is more effective.
 
 \begin{itemize}
     \item Latent space was tested at 2, 3 and 4. Latent space at 4 maximised macro F1 score.
@@ -250,9 +241,7 @@ Hyperparameters:
     \item n_clusters, since task 2 showed over-clustering helped, the approach was to start with high clusters and work down. n_clusters=6 was a good fit for the data.
 \end{itemize}
 
-The selected training procedure was the typical procedure for IDEC, which was pretraining the denoising autoencoder using reconstruction loss and then running K-means to initialise cluster centres on the latent space. The next stage of training is joint optimisation and clustering optimisation to minimise the combined loss function. This procedure is recommended for tabular data and for quite low-dimension data which this problem fitted.
-
-A denoising autoencoder is used to force the model to learn patterns in the data by adding noise and training to reconstruct the clean data. K-means initialisation is used to assign cluster centers. Joint optimisation is used to minimise the combined loss function with soft-clustering using student t-distribution. Clusters are assigned to the class that are most common inside (majority voting).
+Following standard IDEC training for low-dimensional tabular data, a denoising autoencoder is first pretrained via reconstruction loss to learn clean representations from noisy inputs. K-means then initializes the cluster centres in latent space, followed by joint optimization of reconstruction and student's $t$-distribution soft-clustering losses. Clusters are mapped to classes via majority voting
 
 \subsection{Analysis and interpretation of the learned representations}
 
@@ -266,10 +255,10 @@ A denoising autoencoder is used to force the model to learn patterns in the data
 This figure shows the correlation of the features with the dimensions in the latent space.
 
 \begin{itemize}
-    \item z1 represents 'cumulative_high_temp_hours' in the latent space. This factor has a low correlation with degradation status.
-    \item z2 captures the amount of cycles the battery has been used for, as expected for a usage factor, it has high correlation with degradation status.
-    \item z3 represents the heat stress of the battery. This factor has no correlation with degradation status.
-    \item z4 represents battery usage as it had a high correlation with all usage features, as other tasks have shown, usage is the most important factor and this made z4 the best latent factor for clustering.
+    \item z1 represents the battery stress as it uses features such as 'depth_of_discharge_pct' and 'ambient_temp_c', this latent factor has low correlation with degradation status
+    \item z2 captures the amount of cycles the battery has been used for as well as the heat, as expected for a usage factor, it has high correlation with degradation status.
+    \item z3 is similar to z2 but is negatively correlated with 'ambient_temp_c' instead, both these factors have correlation with degradation status.
+    \item z4 represents heat of the battery mainly using 'cumulative_high_temp_hours', this factor has low correlation with degradation status.
 \end{itemize}
 
 \subsection{Usefulness of features}
@@ -282,11 +271,7 @@ This figure shows the correlation of the features with the dimensions in the lat
 
 \subsection{Preprocessing, architecture and training strategy}
 
-Using the features selected in task 3, all of them had some positive impact in XGBoost as seen in section 3.4 and makes a better comparison with task 3. 
-
-This project uses the torch implementation of TabNet. Inverse class-frequency weighting was used to ensure that the model predicted the small 'Critical' class. 
-
-Random search is used instead of grid search since searching through all combinations of hyperparameters would take too long. This was tested using common values used for these hyperparameters and maximising validation macro F1.
+All Task 3 features are retained for a fair comparison. Using PyTorch TabNet with inverse class-frequency weighting ($\alpha = 0.5$) to address the rare Critical class, hyperparameters were tuned via random search (faster than grid search) to maximize validation Macro F1:
 
 \begin{center}
 \begin{tabular}{||c c c||} 
@@ -308,10 +293,49 @@ Random search is used instead of grid search since searching through all combina
 \end{tabular}
 \end{center}
 
-TabNet works better with larger batch sizes compared to other models; however, these create poor generalisations so the model is trained using mini-batch gradient descent. It optimises using the typical optimiser for TabNet which is AdamW.
+Unlike standard dense neural networks that weight all inputs uniformly, TabNet uses sequential attention (n_steps=4) with sparse 'entmax' masks (lambda_sparse = 1e-4) to select the most informative features at each decision step, filtering out noise while reusing dominant degradation indicators (gamma = 1.0). Categorical features 'eol_reached' and 'usage_strategy' are handled via learned embedding layers rather than raw ordinal scaling, while compact feature widths 'n_da = n_a = 16' prevent overfitting the 'Critical' class. Finally, pairing a large batch size (2048) with ghost batch normalisation ensures 'Critical' samples appear regularly in gradient updates while computing normalisation statistics over smaller virtual sub-batches to preserve generalization under AdamW optimization.
+
+During training, weights are updated via mini-batch gradient descent using 'AdamW' (lr = 1e-2) to minimize combined cross-entropy and attention sparsity loss, with learning-rate decay and early stopping for maximising macro F1.
 
 \subsection{Evaluation of classification performance}
 
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.7\textwidth]{confusion_matrix_4.png}}
+    \caption{Confusion matrix for test set (Accuracy: 86\%)}
+    \label{fig:matrix}
+\end{figure}
+
+The macro F1 on the test set is 0.66 with F1 scores for each class being (0.92, 0.82, 0.86, 0.04). This model performs poorly on the small 'Critical' class even with class weights to balance this. However, the model performs well on the other 3 classes especially at predicting 'Normal'. 
+
 \subsection{Comparison with task 3 and feature relevance}
+
+TabNet outperforms Task 3's XGBoost in both overall accuracy (86\% vs. 83\%) and Macro F1 (0.66 vs. 0.62), achieving higher F1 across every class.
+
+\begin{center}
+\begin{tabular}{||c c c ||} 
+ \hline
+ Feature & Attention Importance & Macro F1 Perm Drop\\ [0.5ex] 
+ \hline\hline
+ equivalent\_full\_cycles & 0.5245 & 0.3799 \\ 
+ \hline
+ eol\_reached & 0.1563 & 0.0719\\ 
+ \hline
+ usage\_strategy & 0.0679 & 0.0600 \\ 
+ \hline
+ cumulative\_high\_temp\_hours & 0.1562 & 0.0318 \\ 
+ \hline
+ ambient\_temp\_c & 0.0673 & 0.0303  \\ 
+ \hline
+ resistance\_growth & 0.0085 & 0.0005 \\ 
+ \hline
+ depth\_of\_discharge\_pct & 0.0193 & -0.0025 \\ 
+ \hline
+\end{tabular}
+\end{center}
+
+For each feature the following is calculated, internal attention importance, and the mean macro F1 drop when the feature has mixed values.
+
+Consistent with earlier tasks, 'equivalent_full_cycles' and 'eol_reached' are both highly relevant, whereas 'depth_of_discharge_pct' is consistently irrelevant. Notably, 'cumulative_high_temp_hours' and 'ambient_temp_c' gain relevance in TabNet despite low relevance in Task 3, whereas 'resistance_growth' contributes far less here than in Tasks 3 and 4.
 
 \end{document} 
