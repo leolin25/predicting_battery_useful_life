@@ -62,7 +62,7 @@ Some covariates show different patterns depending on 'degradation status'
 \begin{itemize}
     \item Usage seems like the most important factor for determining 'degradation_status'. 'equivalent_full_cycles' has a median of about 70 for 'Normal', 210 for 'Moderate' and 350 for 'Severe' and 'Critical'. This indicates a highly used battery is likely to be in a degraded state.
     \item 'depth_of_discharge_pct' and 'internal_resistance_mOhm' showed to have differing medians when the degradation status changed. These features are highly indicative of the stress a battery has been exposed to and could predict degradation status.
-    \item 'cumulative_high_temp_hours' has an increasing interquartile range for worsing degradation. This indicates that all batteries have a similar value for this feature but high values are more likely from worsening degradation.
+    \item 'cumulative_high_temp_hours' has an increasing interquartile range for worsening degradation. This indicates that all batteries have a similar value for this feature but high values are more likely from worsening degradation.
 \end{itemize}
 
 \subsection{Degradation status by categorical features}
@@ -76,7 +76,7 @@ A similar analysis can be done on categorical features using stacked bar charts.
     \label{fig:timetable}
 \end{figure}
 
-In Figure 3, 'eol_reached' (true) and non-conservative 'usage_strategy' show substantially higher 'Severe' proportions. Both could be useful, though 'eol_reached' provides sharper class separation.
+In Figure 3, 'eol_reached' (true) and non-conservative 'usage_strategy' show substantially higher 'Severe' proportions. 'usage_strategy' could be useful however 'eol_reached' is a derivative of the target and would cause data leakage.
 
 \section{Task 2: Gaussian Mixture Model}
 
@@ -84,10 +84,10 @@ In Figure 3, 'eol_reached' (true) and non-conservative 'usage_strategy' show sub
 
 GMM is used instead of K-means because the data violates spherical cluster assumptions, requiring full-covariance non-spherical clusters. The clusters will be set to the class that is most present in the cluster (majority voting), because of the class imbalance shown in Fig 1, this means 'Critical' class will not be predicted.
 
-GMM doesn't do well with ordinal or boolean covariates, so choose continuous covariates. 'cumulative_high_temp_hours' not included since it performed badly in validation tests.
+GMM doesn't do well with ordinal or boolean covariates, so choose continuous covariates. 'cumulative_high_temp_hours' not included since it performed badly in validation tests. So use
 
 \begin{itemize}
-    \item 'eol_reached'
+    \item 'equivalent_full_cycles'
     \item 'depth_of_discharge_pct'
     \item 'internal_resistance_mOhm'
 \end{itemize}
@@ -153,34 +153,30 @@ This shows that 'cumulative_high_temp_hours' was a noisy feature for this model 
 
 \subsection{Feature selection and engineering}
 
-Features shown to be useful in task 2 will be included in this model as well. Additionally, we can add the useful categorical variables found in task 1. Categorical features such as 'eol_reached' and 'usage_strategy' are encoded as ordinal variables to make the model have cleaner splits.
+Add all features considered in task 1. 'usage_strategy' is encoded as an ordinal variable to ensure the model has cleaner splits.
 
-The data card explains that the internal resistance of the pack increases as the battery degrades so 'resistance_growth' could be a good feature to add. This feature is calculated as 'internal_resistance_mOhm' / ('cycle_index' + 1). Since the model has regularisation we can add back 'cumulative_high_temp_hours' and 'ambient_temp_c'
+The data card explains that the internal resistance of the pack increases as the battery degrades so 'resistance_growth' could be a good feature to add. This feature is calculated as 'internal_resistance_mOhm' / ('cycle_index' + 1).
 
-XGBoost doesn't require standardised features unlike the previous model so we can keep all features as they are.
+XGBoost does not require standardised features unlike the previous model so we can keep all features as they are.
 
 \subsection{Supervised Learning Model}
 
-Grid Search was used for hyperparameter tuning and finds the best combination of hyperparameters to maximise macro F1 score. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' doesn't improve the validation loss.
+Grid Search was used for hyperparameter tuning and finds the best combination of hyperparameters to maximise macro F1 score. In addition, the built-in 'early_stopping_rounds' hyperparameter stops the model when increasing 'n_estimators' does not improve the validation loss.
 
 \begin{center}
 \begin{tabular}{||c c c||} 
  \hline
  Hyperparameter & Search Space & Optimal Value \\ [0.5ex] 
  \hline\hline
- max\_depth & [3, 5, 7, 9] & 5 \\ 
+ max\_depth & [3, 5, 7, 9] & 3 \\ 
  \hline
- min\_child\_weight & [1, 3, 6] & 5 \\ 
+ min\_child\_weight & [1, 3, 6] & 1 \\ 
  \hline
  subsample & [0.6, 0.7, 0.8, 1.0] & 0.8 \\ 
  \hline
- colsample\_bytree & [0.6, 0.7, 0.8, 1.0] & 0.8 \\ 
+ colsample\_bytree & [0.6, 0.7, 0.8, 1.0] & 0.7 \\ 
  \hline
- reg\_alpha & [0.0, 0.1, 0.5, 1.0] & 0.5 \\ 
- \hline
- learning\_rate & [0.01, 0.03, 0.05, 0.1] & 0.05 \\ 
- \hline
- n\_estimators & [300, 500, 1000] & 1000 \\ 
+ reg\_alpha & [0.0, 0.1, 0.5, 1.0] & 0.0 \\ 
  \hline
 \end{tabular}
 \end{center}
@@ -199,38 +195,43 @@ Macro F1 is the best metric since it is a classification problem. The macro F1 s
 \subsection{Feature importance}
 
 \begin{center}
-\begin{tabular}{||c c c c||} 
+\begin{tabular}{||c c c||} 
  \hline
- Feature & Gain & Weight & Cover \\ [0.5ex] 
+ Feature & Gain & Weight\\ [0.5ex] 
  \hline\hline
- eol\_reached & 125.435112 & 1608.0 & 4413.442383 \\ 
+ equivalent\_full\_cycles & 99.647728 & 11297.0  \\ 
  \hline
- equivalent\_full\_cycles & 99.647728 & 11297.0 & 3765.045654 \\ 
+ usage\_strategy & 47.151421 & 3219.0 \\ 
  \hline
- usage\_strategy & 47.151421 & 3219.0 & 3048.288574 \\ 
+ resistance\_growth & 44.798866 & 9023.0\\ 
  \hline
- resistance\_growth & 44.798866 & 9023.0 & 2302.284180 \\ 
+ depth\_of\_discharge\_pct & 42.865730 & 4815.0  \\ 
  \hline
- depth\_of\_discharge\_pct & 42.865730 & 4815.0 & 2514.131592 \\ 
+ ambient\_temp\_c & 39.376331 & 8320.0 \\ 
  \hline
- ambient\_temp\_c & 39.376331 & 8320.0 & 2595.524902 \\ 
- \hline
- cumulative\_high\_temp\_hours & 32.494751 & 7254.0 & 3034.156006 \\ 
+ cumulative\_high\_temp\_hours & 32.494751 & 7254.0 \\ 
  \hline
 \end{tabular}
 \end{center} 
 
-This table supports the findings in task 2. 'equivalent_full_cycles' is a top feature and 'cumulative_high_temp_hours' is a low impact feature. The categorical variables recommended in task 1 had high importance and the engineered covariate did improve 'internal_resistance_mOhm'.
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1\textwidth]{feature_importance.png}}
+    \caption{Built-in importance by weight}
+    \label{fig:imp}
+\end{figure}
 
-Supervised learning improved prediction performance.
+This table supports the findings in task 2. 'equivalent_full_cycles' is a top feature and 'cumulative_high_temp_hours' is a low impact feature. Feature engineering did improve the resistance feature. 'usage_strategy' and 'ambient_temp_c' were not as impactful as task 1 suggested.
+
+Supervised learning improved prediction performance and performed much better compared to GMM in task 1.
 
 \section{Task 4: Improved Deep Embedded Clustering}
 
-This task will be completed using IDEC. The model framework and training was based on generative AI outputs.
+This task will be completed using IDEC. The model framework and training were based on generative AI output.
 
 \subsection{Preprocessing and model design}
 
-Standard IDEC uses MSE loss, this performs poorly with categorical features so 'eol_reached' and 'usage_strategy' are omitted. Task 3 showed that 'resistance_growth', 'depth_of_discharge_pct', 'ambient_temp_c' and 'cumulative_high_temp_hours' are somewhat informative and could be useful in latent space.
+Standard IDEC uses MSE loss, this performs poorly with categorical features so 'usage_strategy' is not used. Task 3 showed that 'resistance_growth', 'depth_of_discharge_pct', 'ambient_temp_c' and 'cumulative_high_temp_hours' are somewhat informative and could be useful in latent space.
 
 Features are standardised so that IDEC is more effective.
 
