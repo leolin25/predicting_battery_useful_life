@@ -242,7 +242,7 @@ Features are standardised so that IDEC is more effective.
     \item n_clusters, since task 2 showed over-clustering helped, the approach was to start with high clusters and work down. n_clusters=6 was a good fit for the data.
 \end{itemize}
 
-Following standard IDEC training for low-dimensional tabular data, a denoising autoencoder is first pretrained via reconstruction loss to learn clean representations from noisy inputs. K-means then initializes the cluster centres in latent space, followed by joint optimization of reconstruction and student's $t$-distribution soft-clustering losses. Clusters are mapped to classes via majority voting
+Following standard IDEC training for low-dimensional tabular data, a denoising autoencoder is first pretrained via reconstruction loss to learn clean representations from noisy inputs. The K-means then initialise the cluster centres in latent space, followed by joint optimisation of reconstruction and student's $t$-distribution soft-clustering losses. Clusters are mapped to classes via majority voting
 
 \subsection{Analysis and interpretation of the learned representations}
 
